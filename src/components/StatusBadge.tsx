@@ -16,3 +16,18 @@ export function ShootStatusBadge({ status }: { status: ShootStatus }) {
     </span>
   );
 }
+
+/** Settlement paid flag — not the "Paid to" payee column. */
+export function PaidBadge({ paid }: { paid: boolean }) {
+  return (
+    <span
+      className={`status-badge ${
+        paid
+          ? "bg-[var(--ok-bg)] text-[var(--ok-ink)] border border-transparent"
+          : "bg-[var(--surface-raised)] text-[var(--ink-muted)] border border-[var(--border-strong)]"
+      }`}
+    >
+      {paid ? "Paid" : "Unpaid"}
+    </span>
+  );
+}

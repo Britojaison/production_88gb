@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { approveExpense, rejectExpense } from "@/app/actions/expenses";
 import { AppShell } from "@/components/AppShell";
-import { StatusBadge } from "@/components/StatusBadge";
+import { MarkPaidButton } from "@/components/MarkPaidButton";
+import { PaidBadge, StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
@@ -58,7 +59,10 @@ export default async function ManagementExpensePage({
               From {expense.submitter.name} ({expense.submitter.email})
             </p>
           </div>
-          <StatusBadge status={expense.status as ExpenseStatus} />
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={expense.status as ExpenseStatus} />
+            <PaidBadge paid={expense.paid} />
+          </div>
         </div>
 
         <div className="panel panel-pad text-sm sm:!p-6">
@@ -84,8 +88,20 @@ export default async function ManagementExpensePage({
               </div>
             </div>
             <div>
-              <dt className="text-[var(--ink-faint)]">Paid to</dt>
+              <dt className="text-[var(--ink-faint)]">Paid to (payee)</dt>
               <dd className="font-medium text-[var(--ink)]">{expense.paidTo}</dd>
+            </div>
+            <div>
+              <dt className="text-[var(--ink-faint)]">Settlement</dt>
+              <dd className="mt-1 flex flex-wrap items-center gap-3">
+                <PaidBadge paid={expense.paid} />
+                {expense.paid && expense.paidAt ? (
+                  <span className="text-xs text-[var(--ink-muted)]">
+                    since {formatDate(expense.paidAt)}
+                  </span>
+                ) : null}
+                <MarkPaidButton expenseId={expense.id} paid={expense.paid} />
+              </dd>
             </div>
             <div>
               <dt className="text-[var(--ink-faint)]">Vendor payment details</dt>

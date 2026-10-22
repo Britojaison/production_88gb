@@ -94,6 +94,9 @@ model Expense {
   /// DRAFT | SUBMITTED | APPROVED | REJECTED
   status               String         @default("DRAFT")
   rejectionReason      String?
+  /// Settlement flag (distinct from paidTo / payee)
+  paid                 Boolean        @default(false)
+  paidAt               DateTime?
   submitterId          String
   submitter            User           @relation("SubmitterExpenses", fields: [submitterId], references: [id])
   submittedAt          DateTime?

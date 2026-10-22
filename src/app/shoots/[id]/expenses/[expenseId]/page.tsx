@@ -7,7 +7,7 @@ import {
 } from "@/app/actions/expenses";
 import { AppShell } from "@/components/AppShell";
 import { ExpenseForm } from "@/components/ExpenseForm";
-import { StatusBadge } from "@/components/StatusBadge";
+import { PaidBadge, StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
@@ -78,7 +78,10 @@ export default async function ShootExpenseDetailPage({
               {expense.category ? ` · ${expense.category.name}` : ""}
             </p>
           </div>
-          <StatusBadge status={expense.status as ExpenseStatus} />
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={expense.status as ExpenseStatus} />
+            <PaidBadge paid={expense.paid} />
+          </div>
         </div>
 
         {expense.status === "REJECTED" && expense.rejectionReason ? (

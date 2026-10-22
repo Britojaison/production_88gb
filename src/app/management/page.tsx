@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { ExpenseFilters } from "@/components/ExpenseFilters";
-import { StatusBadge } from "@/components/StatusBadge";
+import { MarkPaidButton } from "@/components/MarkPaidButton";
+import { PaidBadge, StatusBadge } from "@/components/StatusBadge";
 import { buildExpenseWhere } from "@/lib/expense-query";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -24,6 +25,7 @@ export default async function ManagementPage({
     status: statusDefault,
     categoryId: filters.categoryId,
     paidTo: filters.paidTo,
+    paid: filters.paid,
     from: filters.from,
     to: filters.to,
   });
@@ -47,13 +49,14 @@ export default async function ManagementPage({
   }
 
   return (
-    <AppShell name={session.user.name} role={session.user.role} >
+    <AppShell name={session.user.name} role={session.user.role}>
       <main className="page-shell page-enter">
         <div className="page-header">
           <div>
             <h1 className="page-title">Expense reviews</h1>
             <p className="page-lead">
               Filter pending or historical expenses. Defaults to submitted.
+              Settlement Paid is separate from payee (Paid to).
             </p>
           </div>
           <Link
@@ -85,13 +88,18 @@ export default async function ManagementPage({
                   <th>Submitter</th>
                   <th>Date</th>
                   <th>Amount</th>
+                  <th>Paid to</th>
                   <th>Status</th>
+                  <th>Paid</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {expenses.map((expense) => (
                   <tr key={expense.id}>
-                    <td className="text-[var(--ink-muted)]">{expense.shoot.name}</td>
+                    <td className="text-[var(--ink-muted)]">
+                      {expense.shoot.name}
+                    </td>
                     <td>
                       <Link
                         href={`/management/${expense.id}`}
@@ -110,8 +118,19 @@ export default async function ManagementPage({
                       {formatDate(expense.date)}
                     </td>
                     <td className="amount">{formatCurrency(expense.amount)}</td>
+                    <td className="text-[var(--ink-muted)]">{expense.paidTo}</td>
                     <td>
                       <StatusBadge status={expense.status as ExpenseStatus} />
+                    </td>
+                    <td>
+                      <PaidBadge paid={expense.paid} />
+                    </td>
+                    <td>
+                      <MarkPaidButton
+                        expenseId={expense.id}
+                        paid={expense.paid}
+                        compact
+                      />
                     </td>
                   </tr>
                 ))}

@@ -64,6 +64,14 @@ function teamNav(): NavItem[] {
 function mgmtNav(): NavItem[] {
   return [
     {
+      href: "/shoots",
+      label: "Shoots",
+      icon: <IconHome />,
+      match: (p) =>
+        p === "/shoots" ||
+        (p.startsWith("/shoots/") && !p.startsWith("/shoots/new")),
+    },
+    {
       href: "/management",
       label: "Reviews",
       icon: <IconList />,

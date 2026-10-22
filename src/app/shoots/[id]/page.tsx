@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { ExpenseFilters } from "@/components/ExpenseFilters";
-import { ShootStatusBadge, StatusBadge } from "@/components/StatusBadge";
+import { PaidBadge, ShootStatusBadge, StatusBadge } from "@/components/StatusBadge";
 import { buildExpenseWhere } from "@/lib/expense-query";
 import { formatCurrency, formatDate, formatDateRange } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -42,6 +42,7 @@ export default async function ShootDetailPage({
     status: filters.status,
     categoryId: filters.categoryId,
     paidTo: filters.paidTo,
+    paid: filters.paid,
     from: filters.from,
     to: filters.to,
   });
@@ -207,6 +208,7 @@ export default async function ShootDetailPage({
                   <th>Amount</th>
                   <th>Paid to</th>
                   <th>Status</th>
+                  <th>Paid</th>
                   <th>Receipt</th>
                 </tr>
               </thead>
@@ -231,6 +233,9 @@ export default async function ShootDetailPage({
                     <td className="text-[var(--ink-muted)]">{expense.paidTo}</td>
                     <td>
                       <StatusBadge status={expense.status as ExpenseStatus} />
+                    </td>
+                    <td>
+                      <PaidBadge paid={expense.paid} />
                     </td>
                     <td className="text-[var(--ink-muted)]">
                       {expense.receiptPath ? (

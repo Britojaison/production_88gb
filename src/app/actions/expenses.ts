@@ -370,3 +370,32 @@ export async function deleteDraft(
   revalidateShootPaths(shootId);
   redirect(`/shoots/${shootId}`);
 }
+
+/** Management-only: toggle settlement `paid` (not payee / paidTo). */
+export async function setExpensePaid(
+  id: string,
+  paid: boolean,
+): Promise<void> {
+  const { user } = await requireDbUser("MANAGEMENT");
+  const existing = await prisma.expense.findUnique({ where: { id } });
+  if (!existing) return;
+
+  await prisma.expense.update({
+    where: { id },
+    data: {
+      paid,
+      paidAt: paid ? new Date() : null,
+    },
+  });
+
+  await logExpenseAudit({
+    expenseId: id,
+    actorId: user.id,
+    action: paid ? "MARKED_PAID" : "MARKED_UNPAID",
+    note: paid ? "Settlement marked paid" : "Settlement marked unpaid",
+  });
+
+  revalidateShootPaths(existing.shootId, id);
+  revalidatePath(`/management/${id}`);
+  revalidatePath("/management");
+}

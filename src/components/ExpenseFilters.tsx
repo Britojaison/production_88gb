@@ -13,14 +13,15 @@ export function ExpenseFilters({
     status?: string;
     categoryId?: string;
     paidTo?: string;
+    paid?: string;
     from?: string;
     to?: string;
   };
   showStatus?: boolean;
 }) {
   return (
-    <form method="get" action={action} className="filter-bar">
-      <div className="lg:col-span-2">
+    <form method="get" action={action} className="filter-bar !lg:grid-cols-4">
+      <div className="sm:col-span-2 lg:col-span-2">
         <label className="field-label" htmlFor="filter-q">
           Search
         </label>
@@ -52,6 +53,21 @@ export function ExpenseFilters({
           </select>
         </div>
       ) : null}
+      <div>
+        <label className="field-label" htmlFor="filter-paid">
+          Settlement
+        </label>
+        <select
+          id="filter-paid"
+          name="paid"
+          defaultValue={defaults?.paid ?? "ALL"}
+          className="field-input"
+        >
+          <option value="ALL">All (paid/unpaid)</option>
+          <option value="PAID">Paid</option>
+          <option value="UNPAID">Unpaid</option>
+        </select>
+      </div>
       <div>
         <label className="field-label" htmlFor="filter-category">
           Category
@@ -106,7 +122,7 @@ export function ExpenseFilters({
           className="field-input"
         />
       </div>
-      <div className="flex items-end sm:col-span-2 lg:col-span-1">
+      <div className="flex items-end">
         <button type="submit" className="btn btn-primary w-full">
           Filter
         </button>

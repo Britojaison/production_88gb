@@ -6,6 +6,8 @@ export function buildExpenseWhere(opts: {
   status?: string | null;
   categoryId?: string | null;
   paidTo?: string | null;
+  /** ALL | PAID | UNPAID — settlement flag, not payee */
+  paid?: string | null;
   from?: string | null;
   to?: string | null;
   statusIn?: string[];
@@ -19,6 +21,8 @@ export function buildExpenseWhere(opts: {
   if (opts.paidTo?.trim()) {
     where.paidTo = { contains: opts.paidTo.trim() };
   }
+  if (opts.paid === "PAID") where.paid = true;
+  if (opts.paid === "UNPAID") where.paid = false;
   if (opts.from || opts.to) {
     where.date = {};
     if (opts.from) where.date.gte = new Date(opts.from);

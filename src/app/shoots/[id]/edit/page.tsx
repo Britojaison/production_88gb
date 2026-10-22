@@ -1,0 +1,69 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { updateShoot } from "@/app/actions/shoots";
+import { AppHeader } from "@/components/AppHeader";
+import { ShootForm } from "@/components/ShootForm";
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/session";
+import { RANDOM_SHOOT_IMAGE } from "@/lib/shoot-images";
+import type { ShootStatus } from "@/lib/types";
+
+export const instant = false;
+
+export default async function EditShootPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const session = await requireRole("VIDEO_TEAM");
+
+  const [shoot, brands] = await Promise.all([
+    prisma.shoot.findUnique({
+      where: { id },
+      include: { brands: true },
+    }),
+    prisma.brand.findMany({ orderBy: { name: "asc" } }),
+  ]);
+  if (!shoot) {
+    notFound();
+  }
+
+  const boundUpdate = updateShoot.bind(null, shoot.id);
+
+  return (
+    <>
+      <AppHeader name={session.user.name} role={session.user.role} />
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
+        <div className="mb-4">
+          <Link
+            href={`/shoots/${shoot.id}`}
+            className="text-sm text-slate-600 hover:text-slate-900"
+          >
+            ← Back to shoot
+          </Link>
+        </div>
+        <h1 className="text-xl font-semibold text-slate-900">Edit shoot</h1>
+        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
+          <ShootForm
+            action={boundUpdate}
+            brands={brands}
+            submitLabel="Save changes"
+            initial={{
+              name: shoot.name,
+              startDate: shoot.startDate.toISOString().slice(0, 10),
+              endDate: shoot.endDate
+                ? shoot.endDate.toISOString().slice(0, 10)
+                : "",
+              notes: shoot.notes ?? "",
+              status: shoot.status as ShootStatus,
+              image: shoot.image ?? RANDOM_SHOOT_IMAGE,
+              budget: shoot.budget != null ? String(shoot.budget) : "",
+              brandIds: shoot.brands.map((sb) => sb.brandId),
+            }}
+          />
+        </div>
+      </main>
+    </>
+  );
+}

@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 88GB Production Expenses
 
-## Getting Started
+Local expense tracker for a video production team. Expenses live under **shoots**. Team submits; management approves/rejects.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router) + TypeScript + Tailwind
+- Prisma + SQLite
+- NextAuth credentials (email + password)
+
+## Setup
 
 ```bash
+cp .env.example .env
+npm install
+npm run db:setup    # force-reset SQLite + seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+After schema changes without wiping data: `npm run db:sync` then restart `npm run dev`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+After `db:setup`, **sign out and sign back in** (user ids change).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Seed logins
 
-## Learn More
+| Role | Email | Password |
+|------|-------|----------|
+| Video team | `team@88gb.local` | `password123` |
+| Management | `mgmt@88gb.local` | `password123` |
 
-To learn more about Next.js, take a look at the following resources:
+Seed also creates categories, vendors, brands/clients (MM wear, MilkymistD, Super Saravana Stores, Cinco, Sathya), shoots with budgets (some multi-brand), and a submitted expense.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Try features 1–9
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Receipts** — Team → shoot → Add expense → attach image/PDF → save; view/replace/remove on draft detail. Files in `public/uploads/`.
+2. **Budget** — Create/edit shoot with optional budget; cards + shoot detail show spent / remaining (all expense statuses).
+3. **Users** — Management → Users → create video_team or management accounts.
+4. **Filters** — Shoots list (name/status); shoot expenses + management list (status, category, payee, dates, search).
+5. **Export** — “Export CSV” on shoot detail and management list (respects current filters).
+6. **Notifications** — Submit → management gets Alerts; approve/reject → submitter notified. Optional email: set `SMTP_HOST` later (stub logs only today).
+7. **Vendors** — `/vendors` directory; pick on expense form to prefills payee + payment details. Brands/clients — `/brands` directory; multi-select on shoot create/edit (type new names to auto-save); shown on shoot cards + detail.
+8. **Categories** — Required on expenses (Model, Freelancer, Makeup Artist, Camera Rental, Studio, Location, Cinematographers); management can add more; shoot detail shows totals by category. Reseed after category list changes: `npm run db:setup`.
+9. **Audit trail** — Expense detail (team + management) lists submit/approve/reject (and create/update) with actor + time.
 
-## Deploy on Vercel
+## Deferred
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Real SMTP/Slack delivery (in-app Notification model + `sendEmailStub` hook only).
+- Excel `.xlsx` (CSV is Excel-friendly).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Dev server |
+| `npm run build` | Generate Prisma client + production build |
+| `npm run db:setup` | Reset DB + seed |
+| `npm run db:sync` | Push schema + regenerate client |
+| `npm run db:seed` | Re-seed only |

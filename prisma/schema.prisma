@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String
+  passwordHash  String
+  /// VIDEO_TEAM | MANAGEMENT
+  role          String
+  expenses      Expense[]      @relation("SubmitterExpenses")
+  reviews       Expense[]      @relation("ReviewerExpenses")
+  notifications Notification[]
+  auditEvents   AuditEvent[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Shoot {
+  id        String       @id @default(cuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime?
+  notes     String?
+  /// Public path e.g. /images/1.png
+  image     String?
+  /// Optional budget in INR
+  budget    Float?
+  /// PLANNED | ACTIVE | WRAPPED
+  status    String       @default("PLANNED")
+  expenses  Expense[]
+  brands    ShootBrand[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Brand {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  shoots    ShootBrand[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model ShootBrand {
+  shootId String
+  brandId String
+  shoot   Shoot  @relation(fields: [shootId], references: [id], onDelete: Cascade)
+  brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@id([shootId, brandId])
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  expenses  Expense[]
+  createdAt DateTime  @default(now())
+}
+
+model Vendor {
+  id             String    @id @default(cuid())
+  name           String
+  paymentDetails String
+  expenses       Expense[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Expense {
+  id                   String         @id @default(cuid())
+  shootId              String
+  shoot                Shoot          @relation(fields: [shootId], references: [id], onDelete: Cascade)
+  title                String
+  date                 DateTime
+  amount               Float
+  paidTo               String
+  vendorPaymentDetails String
+  categoryId           String?
+  category             Category?      @relation(fields: [categoryId], references: [id])
+  vendorId             String?
+  vendor               Vendor?        @relation(fields: [vendorId], references: [id])
+  /// Relative path under public/uploads, e.g. uploads/abc.pdf
+  receiptPath          String?
+  receiptName          String?
+  /// DRAFT | SUBMITTED | APPROVED | REJECTED
+  status               String         @default("DRAFT")
+  rejectionReason      String?
+  submitterId          String
+  submitter            User           @relation("SubmitterExpenses", fields: [submitterId], references: [id])
+  submittedAt          DateTime?
+  reviewedAt           DateTime?
+  reviewedById         String?
+  reviewedBy           User?          @relation("ReviewerExpenses", fields: [reviewedById], references: [id])
+  notifications        Notification[]
+  auditEvents          AuditEvent[]
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  href      String?
+  read      Boolean  @default(false)
+  expenseId String?
+  expense   Expense? @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+}
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  expenseId String
+  expense   Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action    String
+  fromStatus String?
+  toStatus   String?
+  note      String?
+  createdAt DateTime @default(now())
+}

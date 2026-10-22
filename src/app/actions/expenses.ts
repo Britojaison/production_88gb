@@ -1,0 +1,372 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { logExpenseAudit } from "@/lib/audit";
+import { notifyAllManagement, notifyUsers } from "@/lib/notifications";
+import { prisma } from "@/lib/prisma";
+import { requireDbUser } from "@/lib/session";
+import { ExpenseStatus } from "@/lib/types";
+import { deleteReceiptFile, saveReceiptFile } from "@/lib/uploads";
+import { expenseFormSchema, rejectSchema } from "@/lib/validations";
+import { resolveVendorForExpense } from "@/lib/vendors";
+
+function parseExpenseForm(formData: FormData) {
+  const vendorId = String(formData.get("vendorId") ?? "").trim();
+  return expenseFormSchema.safeParse({
+    title: formData.get("title"),
+    date: formData.get("date"),
+    amount: formData.get("amount"),
+    paidTo: formData.get("paidTo"),
+    vendorPaymentDetails: formData.get("vendorPaymentDetails"),
+    categoryId: formData.get("categoryId"),
+    vendorId: vendorId || undefined,
+  });
+}
+
+function revalidateShootPaths(shootId: string, expenseId?: string) {
+  revalidatePath("/shoots");
+  revalidatePath(`/shoots/${shootId}`);
+  if (expenseId) {
+    revalidatePath(`/shoots/${shootId}/expenses/${expenseId}`);
+  }
+  revalidatePath("/management");
+  revalidatePath("/notifications");
+  revalidatePath("/vendors");
+}
+
+async function handleReceipt(
+  formData: FormData,
+  existing?: { path?: string | null; name?: string | null },
+): Promise<
+  | { receiptPath: string | null; receiptName: string | null }
+  | { error: string }
+> {
+  const remove = formData.get("removeReceipt") === "on";
+  const file = formData.get("receipt");
+
+  if (remove) {
+    await deleteReceiptFile(existing?.path);
+    return { receiptPath: null, receiptName: null };
+  }
+
+  if (file instanceof File && file.size > 0) {
+    try {
+      const saved = await saveReceiptFile(file);
+      await deleteReceiptFile(existing?.path);
+      return {
+        receiptPath: saved.relativePath,
+        receiptName: saved.originalName,
+      };
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Upload failed" };
+    }
+  }
+
+  return {
+    receiptPath: existing?.path ?? null,
+    receiptName: existing?.name ?? null,
+  };
+}
+
+export async function createExpense(
+  shootId: string,
+  formData: FormData,
+): Promise<{ error: string } | void> {
+  const { user } = await requireDbUser("VIDEO_TEAM");
+  const parsed = parseExpenseForm(formData);
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const shoot = await prisma.shoot.findUnique({ where: { id: shootId } });
+  if (!shoot) {
+    return { error: "Shoot not found" };
+  }
+
+  const receipt = await handleReceipt(formData);
+  if ("error" in receipt) return receipt;
+
+  const data = parsed.data;
+  const vendorId = await resolveVendorForExpense({
+    vendorId: data.vendorId,
+    paidTo: data.paidTo,
+    paymentDetails: data.vendorPaymentDetails,
+  });
+
+  const expense = await prisma.expense.create({
+    data: {
+      shootId,
+      title: data.title,
+      date: new Date(data.date),
+      amount: data.amount,
+      paidTo: data.paidTo,
+      vendorPaymentDetails: data.vendorPaymentDetails,
+      categoryId: data.categoryId,
+      vendorId,
+      receiptPath: receipt.receiptPath,
+      receiptName: receipt.receiptName,
+      status: ExpenseStatus.DRAFT,
+      submitterId: user.id,
+    },
+  });
+
+  await logExpenseAudit({
+    expenseId: expense.id,
+    actorId: user.id,
+    action: "CREATED",
+    toStatus: ExpenseStatus.DRAFT,
+  });
+
+  revalidateShootPaths(shootId, expense.id);
+  redirect(`/shoots/${shootId}/expenses/${expense.id}`);
+}
+
+export async function updateExpense(
+  shootId: string,
+  id: string,
+  formData: FormData,
+): Promise<{ error: string } | void> {
+  const { user } = await requireDbUser("VIDEO_TEAM");
+  const parsed = parseExpenseForm(formData);
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const existing = await prisma.expense.findUnique({ where: { id } });
+  if (
+    !existing ||
+    existing.shootId !== shootId ||
+    existing.submitterId !== user.id
+  ) {
+    return { error: "Expense not found" };
+  }
+  if (
+    existing.status !== ExpenseStatus.DRAFT &&
+    existing.status !== ExpenseStatus.REJECTED
+  ) {
+    return { error: "Only draft or rejected expenses can be edited" };
+  }
+
+  const receipt = await handleReceipt(formData, {
+    path: existing.receiptPath,
+    name: existing.receiptName,
+  });
+  if ("error" in receipt) return receipt;
+
+  const data = parsed.data;
+  const vendorId = await resolveVendorForExpense({
+    vendorId: data.vendorId,
+    paidTo: data.paidTo,
+    paymentDetails: data.vendorPaymentDetails,
+  });
+
+  await prisma.expense.update({
+    where: { id },
+    data: {
+      title: data.title,
+      date: new Date(data.date),
+      amount: data.amount,
+      paidTo: data.paidTo,
+      vendorPaymentDetails: data.vendorPaymentDetails,
+      categoryId: data.categoryId,
+      vendorId,
+      receiptPath: receipt.receiptPath,
+      receiptName: receipt.receiptName,
+      status: ExpenseStatus.DRAFT,
+      rejectionReason: null,
+      submittedAt: null,
+      reviewedAt: null,
+      reviewedById: null,
+    },
+  });
+
+  await logExpenseAudit({
+    expenseId: id,
+    actorId: user.id,
+    action: "UPDATED",
+    fromStatus: existing.status,
+    toStatus: ExpenseStatus.DRAFT,
+  });
+
+  revalidateShootPaths(shootId, id);
+  redirect(`/shoots/${shootId}/expenses/${id}`);
+}
+
+export async function submitExpense(
+  shootId: string,
+  id: string,
+): Promise<void> {
+  const { user } = await requireDbUser("VIDEO_TEAM");
+  const existing = await prisma.expense.findUnique({
+    where: { id },
+    include: { shoot: true },
+  });
+
+  if (
+    !existing ||
+    existing.shootId !== shootId ||
+    existing.submitterId !== user.id
+  ) {
+    return;
+  }
+  if (
+    existing.status !== ExpenseStatus.DRAFT &&
+    existing.status !== ExpenseStatus.REJECTED
+  ) {
+    return;
+  }
+
+  await prisma.expense.update({
+    where: { id },
+    data: {
+      status: ExpenseStatus.SUBMITTED,
+      submittedAt: new Date(),
+      rejectionReason: null,
+      reviewedAt: null,
+      reviewedById: null,
+    },
+  });
+
+  await logExpenseAudit({
+    expenseId: id,
+    actorId: user.id,
+    action: "SUBMITTED",
+    fromStatus: existing.status,
+    toStatus: ExpenseStatus.SUBMITTED,
+  });
+
+  await notifyAllManagement({
+    type: "EXPENSE_SUBMITTED",
+    title: "Expense submitted for review",
+    body: `${user.name} submitted “${existing.title}” on ${existing.shoot.name}.`,
+    href: `/management/${id}`,
+    expenseId: id,
+  });
+
+  revalidateShootPaths(shootId, id);
+  redirect(`/shoots/${shootId}/expenses/${id}`);
+}
+
+export async function approveExpense(id: string): Promise<void> {
+  const { user } = await requireDbUser("MANAGEMENT");
+  const existing = await prisma.expense.findUnique({
+    where: { id },
+    include: { shoot: true },
+  });
+
+  if (!existing || existing.status !== ExpenseStatus.SUBMITTED) {
+    return;
+  }
+
+  await prisma.expense.update({
+    where: { id },
+    data: {
+      status: ExpenseStatus.APPROVED,
+      reviewedAt: new Date(),
+      reviewedById: user.id,
+      rejectionReason: null,
+    },
+  });
+
+  await logExpenseAudit({
+    expenseId: id,
+    actorId: user.id,
+    action: "APPROVED",
+    fromStatus: ExpenseStatus.SUBMITTED,
+    toStatus: ExpenseStatus.APPROVED,
+  });
+
+  await notifyUsers({
+    userIds: [existing.submitterId],
+    type: "EXPENSE_APPROVED",
+    title: "Expense approved",
+    body: `“${existing.title}” on ${existing.shoot.name} was approved.`,
+    href: `/shoots/${existing.shootId}/expenses/${id}`,
+    expenseId: id,
+  });
+
+  revalidateShootPaths(existing.shootId, id);
+  revalidatePath(`/management/${id}`);
+  redirect("/management");
+}
+
+export async function rejectExpense(
+  id: string,
+  formData: FormData,
+): Promise<void> {
+  const { user } = await requireDbUser("MANAGEMENT");
+  const parsed = rejectSchema.safeParse({
+    reason: formData.get("reason"),
+  });
+
+  if (!parsed.success) {
+    return;
+  }
+
+  const existing = await prisma.expense.findUnique({
+    where: { id },
+    include: { shoot: true },
+  });
+  if (!existing || existing.status !== ExpenseStatus.SUBMITTED) {
+    return;
+  }
+
+  await prisma.expense.update({
+    where: { id },
+    data: {
+      status: ExpenseStatus.REJECTED,
+      rejectionReason: parsed.data.reason,
+      reviewedAt: new Date(),
+      reviewedById: user.id,
+    },
+  });
+
+  await logExpenseAudit({
+    expenseId: id,
+    actorId: user.id,
+    action: "REJECTED",
+    fromStatus: ExpenseStatus.SUBMITTED,
+    toStatus: ExpenseStatus.REJECTED,
+    note: parsed.data.reason,
+  });
+
+  await notifyUsers({
+    userIds: [existing.submitterId],
+    type: "EXPENSE_REJECTED",
+    title: "Expense rejected",
+    body: `“${existing.title}” on ${existing.shoot.name} was rejected: ${parsed.data.reason}`,
+    href: `/shoots/${existing.shootId}/expenses/${id}`,
+    expenseId: id,
+  });
+
+  revalidateShootPaths(existing.shootId, id);
+  revalidatePath(`/management/${id}`);
+  redirect("/management");
+}
+
+export async function deleteDraft(
+  shootId: string,
+  id: string,
+): Promise<void> {
+  const { user } = await requireDbUser("VIDEO_TEAM");
+
+  const existing = await prisma.expense.findUnique({ where: { id } });
+  if (
+    !existing ||
+    existing.shootId !== shootId ||
+    existing.submitterId !== user.id
+  ) {
+    return;
+  }
+  if (existing.status !== ExpenseStatus.DRAFT) {
+    return;
+  }
+
+  await deleteReceiptFile(existing.receiptPath);
+  await prisma.expense.delete({ where: { id } });
+  revalidateShootPaths(shootId);
+  redirect(`/shoots/${shootId}`);
+}

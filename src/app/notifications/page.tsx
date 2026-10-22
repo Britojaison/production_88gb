@@ -3,7 +3,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/app/actions/notifications";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requireDbUser } from "@/lib/session";
@@ -20,8 +20,7 @@ export default async function NotificationsPage() {
   });
 
   return (
-    <>
-      <AppHeader name={user.name} role={user.role as Role} />
+    <AppShell name={user.name} role={user.role as Role} >
       <main className="page-shell page-enter max-w-3xl">
         <div className="page-header">
           <h1 className="page-title">Notifications</h1>
@@ -79,6 +78,6 @@ export default async function NotificationsPage() {
           </ul>
         )}
       </main>
-    </>
+    </AppShell>
   );
 }

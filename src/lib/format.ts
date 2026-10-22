@@ -43,7 +43,7 @@ export function statusLabel(status: ExpenseStatus) {
 export function statusClass(status: ExpenseStatus) {
   switch (status) {
     case "DRAFT":
-      return "bg-[var(--surface)] text-[var(--ink-muted)] border border-[var(--border)]";
+      return "bg-[var(--surface-raised)] text-[var(--ink-muted)] border border-[var(--border-strong)]";
     case "SUBMITTED":
       return "bg-[var(--warn-bg)] text-[var(--warn-ink)] border border-transparent";
     case "APPROVED":
@@ -51,7 +51,7 @@ export function statusClass(status: ExpenseStatus) {
     case "REJECTED":
       return "bg-[var(--danger-bg)] text-[var(--danger-ink)] border border-transparent";
     default:
-      return "bg-[var(--surface)] text-[var(--ink-muted)] border border-[var(--border)]";
+      return "bg-[var(--surface-raised)] text-[var(--ink-muted)] border border-[var(--border)]";
   }
 }
 
@@ -71,12 +71,12 @@ export function shootStatusLabel(status: ShootStatus) {
 export function shootStatusClass(status: ShootStatus) {
   switch (status) {
     case "PLANNED":
-      return "bg-[var(--surface-raised)]/90 text-[var(--ink-muted)] border border-[var(--border)] backdrop-blur-sm";
+      return "bg-[var(--bg)]/80 text-[var(--ink-muted)] border border-[var(--border-strong)] backdrop-blur-sm";
     case "ACTIVE":
-      return "bg-[var(--info-bg)]/95 text-[var(--info-ink)] border border-transparent backdrop-blur-sm";
+      return "bg-[var(--accent)] text-[#1a0c04] border border-transparent shadow-[0_0_16px_var(--accent-glow)]";
     case "WRAPPED":
-      return "bg-[var(--accent-soft)]/95 text-[var(--accent-ink)] border border-transparent backdrop-blur-sm";
+      return "bg-[var(--ok-bg)] text-[var(--ok-ink)] border border-transparent backdrop-blur-sm";
     default:
-      return "bg-[var(--surface-raised)]/90 text-[var(--ink-muted)] border border-[var(--border)]";
+      return "bg-[var(--bg)]/80 text-[var(--ink-muted)] border border-[var(--border)]";
   }
 }

@@ -1,5 +1,5 @@
 import { createShoot } from "@/app/actions/shoots";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { ShootForm } from "@/components/ShootForm";
 import { prisma } from "@/lib/prisma";
 import { RANDOM_SHOOT_IMAGE } from "@/lib/shoot-images";
@@ -13,8 +13,7 @@ export default async function NewShootPage() {
   const brands = await prisma.brand.findMany({ orderBy: { name: "asc" } });
 
   return (
-    <>
-      <AppHeader name={session.user.name} role={session.user.role} />
+    <AppShell name={session.user.name} role={session.user.role} >
       <main className="page-shell page-enter max-w-2xl">
         <h1 className="page-title">New shoot</h1>
         <p className="page-lead">
@@ -34,6 +33,6 @@ export default async function NewShootPage() {
           />
         </div>
       </main>
-    </>
+    </AppShell>
   );
 }

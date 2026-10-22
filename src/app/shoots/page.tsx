@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { ShootCard } from "@/components/ShootCard";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
@@ -48,8 +48,7 @@ export default async function ShootsPage({
   );
 
   return (
-    <>
-      <AppHeader name={session.user.name} role={session.user.role} />
+    <AppShell name={session.user.name} role={session.user.role} >
       <main className="page-shell page-enter">
         <div className="page-header">
           <div>
@@ -127,6 +126,6 @@ export default async function ShootsPage({
           </div>
         )}
       </main>
-    </>
+    </AppShell>
   );
 }

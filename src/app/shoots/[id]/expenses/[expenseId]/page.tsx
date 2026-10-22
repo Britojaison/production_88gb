@@ -5,7 +5,7 @@ import {
   submitExpense,
   updateExpense,
 } from "@/app/actions/expenses";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -58,8 +58,7 @@ export default async function ShootExpenseDetailPage({
   const boundDelete = deleteDraft.bind(null, shootId, expense.id);
 
   return (
-    <>
-      <AppHeader name={session.user.name} role={session.user.role} />
+    <AppShell name={session.user.name} role={session.user.role} >
       <main className="page-shell page-enter max-w-2xl">
         <div className="mb-4">
           <Link href={`/shoots/${shootId}`} className="back-link">
@@ -205,6 +204,6 @@ export default async function ShootExpenseDetailPage({
           )}
         </section>
       </main>
-    </>
+    </AppShell>
   );
 }

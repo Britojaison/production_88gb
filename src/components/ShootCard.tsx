@@ -39,19 +39,19 @@ export function ShootCard({
           alt=""
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover"
+          className="object-cover opacity-90"
         />
-        <div className="absolute right-2 top-2 z-10">
+        <div className="absolute right-3 top-3 z-10">
           <ShootStatusBadge status={status as ShootStatus} />
         </div>
       </div>
-      <div className="flex flex-1 flex-col gap-2.5 p-3.5">
+      <div className="flex flex-1 flex-col gap-2.5 p-4">
         <div className="min-w-0">
-          <h2 className="line-clamp-2 text-[0.95rem] font-semibold leading-snug tracking-tight text-[var(--ink)]">
+          <h2 className="line-clamp-2 text-[1rem] font-semibold leading-snug tracking-tight text-[var(--ink)]">
             {name}
           </h2>
           {brandNames.length > 0 ? (
-            <div className="mt-1.5 flex flex-wrap gap-1">
+            <div className="mt-2 flex flex-wrap gap-1">
               {brandNames.slice(0, 3).map((b) => (
                 <span key={b} className="brand-chip truncate">
                   {b}
@@ -66,23 +66,23 @@ export function ShootCard({
         <p className="text-xs text-[var(--ink-muted)]">
           {formatDateRange(startDate, endDate)}
         </p>
-        <div className="mt-auto space-y-1 border-t border-[var(--border)] pt-2.5 text-xs text-[var(--ink-muted)]">
+        <div className="mt-auto space-y-1.5 border-t border-[var(--border)] pt-3">
           <div className="flex items-baseline justify-between gap-2">
-            <span>
+            <span className="text-xs text-[var(--ink-faint)]">
               {expenseCount === 1 ? "1 expense" : `${expenseCount} expenses`}
             </span>
-            <span className="amount font-medium text-[var(--ink)]">
+            <span className="amount-lg text-[var(--ink)]">
               {formatCurrency(totalAmount)}
             </span>
           </div>
           {budget != null ? (
-            <div className="flex items-baseline justify-between gap-2">
+            <div className="flex items-baseline justify-between gap-2 text-xs text-[var(--ink-muted)]">
               <span>Budget {formatCurrency(budget)}</span>
               <span
                 className={
                   remaining != null && remaining < 0
-                    ? "amount font-medium text-[var(--danger-ink)]"
-                    : "amount font-medium text-[var(--ink)]"
+                    ? "amount font-semibold text-[var(--danger-ink)]"
+                    : "amount font-semibold text-[var(--ok-ink)]"
                 }
               >
                 Left {formatCurrency(remaining ?? 0)}

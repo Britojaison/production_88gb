@@ -1,5 +1,5 @@
 import { createUser } from "@/app/actions/users";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 
@@ -10,8 +10,7 @@ export default async function UsersPage() {
   const users = await prisma.user.findMany({ orderBy: { createdAt: "desc" } });
 
   return (
-    <>
-      <AppHeader name={session.user.name} role={session.user.role} />
+    <AppShell name={session.user.name} role={session.user.role} >
       <main className="page-shell page-enter max-w-3xl">
         <h1 className="page-title">Users</h1>
         <p className="page-lead">Create video team or management accounts.</p>
@@ -73,6 +72,6 @@ export default async function UsersPage() {
           </table>
         </div>
       </main>
-    </>
+    </AppShell>
   );
 }

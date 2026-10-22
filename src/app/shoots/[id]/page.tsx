@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { ExpenseFilters } from "@/components/ExpenseFilters";
 import { ShootStatusBadge, StatusBadge } from "@/components/StatusBadge";
 import { buildExpenseWhere } from "@/lib/expense-query";
@@ -70,8 +70,7 @@ export default async function ShootDetailPage({
   }
 
   return (
-    <>
-      <AppHeader name={session.user.name} role={session.user.role} />
+    <AppShell name={session.user.name} role={session.user.role} >
       <main className="page-shell page-enter">
         <div className="mb-4">
           <Link href="/shoots" className="back-link">
@@ -102,27 +101,36 @@ export default async function ShootDetailPage({
                 {shoot.notes}
               </p>
             ) : null}
-            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-[var(--ink)]">
-              <p>
-                Spent{" "}
-                <span className="amount font-medium">{formatCurrency(spent)}</span>
-              </p>
-              {shoot.budget != null ? (
-                <p>
-                  Budget{" "}
-                  <span className="amount">{formatCurrency(shoot.budget)}</span>
-                  <span className="mx-1.5 text-[var(--ink-faint)]">·</span>
-                  Remaining{" "}
-                  <span
-                    className={
-                      shoot.budget - spent < 0
-                        ? "amount font-medium text-[var(--danger-ink)]"
-                        : "amount font-medium"
-                    }
-                  >
-                    {formatCurrency(shoot.budget - spent)}
-                  </span>
+            <div className="panel panel-glow mt-5 grid max-w-xl gap-4 p-4 sm:grid-cols-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
+                  Spent
                 </p>
+                <p className="amount-lg mt-1">{formatCurrency(spent)}</p>
+              </div>
+              {shoot.budget != null ? (
+                <>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
+                      Budget
+                    </p>
+                    <p className="amount-lg mt-1">{formatCurrency(shoot.budget)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
+                      Remaining
+                    </p>
+                    <p
+                      className={
+                        shoot.budget - spent < 0
+                          ? "amount-lg mt-1 text-[var(--danger-ink)]"
+                          : "amount-lg mt-1 text-[var(--ok-ink)]"
+                      }
+                    >
+                      {formatCurrency(shoot.budget - spent)}
+                    </p>
+                  </div>
+                </>
               ) : null}
             </div>
           </div>
@@ -245,6 +253,6 @@ export default async function ShootDetailPage({
           </div>
         )}
       </main>
-    </>
+    </AppShell>
   );
 }

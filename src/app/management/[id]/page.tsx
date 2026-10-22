@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { approveExpense, rejectExpense } from "@/app/actions/expenses";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -40,8 +40,7 @@ export default async function ManagementExpensePage({
   const isPending = expense.status === "SUBMITTED";
 
   return (
-    <>
-      <AppHeader name={session.user.name} role={session.user.role} />
+    <AppShell name={session.user.name} role={session.user.role} >
       <main className="page-shell page-enter max-w-2xl">
         <div className="mb-4">
           <Link href="/management" className="back-link">
@@ -168,6 +167,6 @@ export default async function ManagementExpensePage({
           </ul>
         </section>
       </main>
-    </>
+    </AppShell>
   );
 }

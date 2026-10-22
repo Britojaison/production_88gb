@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { ExpenseFilters } from "@/components/ExpenseFilters";
 import { StatusBadge } from "@/components/StatusBadge";
 import { buildExpenseWhere } from "@/lib/expense-query";
@@ -47,8 +47,7 @@ export default async function ManagementPage({
   }
 
   return (
-    <>
-      <AppHeader name={session.user.name} role={session.user.role} />
+    <AppShell name={session.user.name} role={session.user.role} >
       <main className="page-shell page-enter">
         <div className="page-header">
           <div>
@@ -121,6 +120,6 @@ export default async function ManagementPage({
           </div>
         )}
       </main>
-    </>
+    </AppShell>
   );
 }

@@ -1,5 +1,5 @@
 import { createBrand } from "@/app/actions/brands";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { prisma } from "@/lib/prisma";
 import { requireDbUser } from "@/lib/session";
 import type { Role } from "@/lib/types";
@@ -14,8 +14,7 @@ export default async function BrandsPage() {
   });
 
   return (
-    <>
-      <AppHeader name={user.name} role={user.role as Role} />
+    <AppShell name={user.name} role={user.role as Role} >
       <main className="page-shell page-enter max-w-3xl">
         <h1 className="page-title">Brands / clients</h1>
         <p className="page-lead">
@@ -66,6 +65,6 @@ export default async function BrandsPage() {
           )}
         </ul>
       </main>
-    </>
+    </AppShell>
   );
 }

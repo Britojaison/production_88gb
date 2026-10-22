@@ -1,5 +1,5 @@
 import { createVendor } from "@/app/actions/vendors";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { prisma } from "@/lib/prisma";
 import { requireDbUser } from "@/lib/session";
 import type { Role } from "@/lib/types";
@@ -11,8 +11,7 @@ export default async function VendorsPage() {
   const vendors = await prisma.vendor.findMany({ orderBy: { name: "asc" } });
 
   return (
-    <>
-      <AppHeader name={user.name} role={user.role as Role} />
+    <AppShell name={user.name} role={user.role as Role} >
       <main className="page-shell page-enter max-w-3xl">
         <h1 className="page-title">Vendor directory</h1>
         <p className="page-lead">
@@ -61,6 +60,6 @@ export default async function VendorsPage() {
           ))}
         </ul>
       </main>
-    </>
+    </AppShell>
   );
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { updateShoot } from "@/app/actions/shoots";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { ShootForm } from "@/components/ShootForm";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
@@ -32,8 +32,7 @@ export default async function EditShootPage({
   const boundUpdate = updateShoot.bind(null, shoot.id);
 
   return (
-    <>
-      <AppHeader name={session.user.name} role={session.user.role} />
+    <AppShell name={session.user.name} role={session.user.role} >
       <main className="page-shell page-enter max-w-2xl">
         <div className="mb-4">
           <Link href={`/shoots/${shoot.id}`} className="back-link">
@@ -61,6 +60,6 @@ export default async function EditShootPage({
           />
         </div>
       </main>
-    </>
+    </AppShell>
   );
 }

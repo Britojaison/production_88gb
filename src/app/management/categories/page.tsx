@@ -1,5 +1,5 @@
 import { createCategory } from "@/app/actions/categories";
-import { AppHeader } from "@/components/AppHeader";
+import { AppShell } from "@/components/AppShell";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 
@@ -10,8 +10,7 @@ export default async function CategoriesPage() {
   const categories = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
 
   return (
-    <>
-      <AppHeader name={session.user.name} role={session.user.role} />
+    <AppShell name={session.user.name} role={session.user.role} >
       <main className="page-shell page-enter max-w-2xl">
         <h1 className="page-title">Categories</h1>
         <p className="page-lead">Expense roles used across shoots.</p>
@@ -44,6 +43,6 @@ export default async function CategoriesPage() {
           ))}
         </ul>
       </main>
-    </>
+    </AppShell>
   );
 }

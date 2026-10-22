@@ -52,10 +52,16 @@
     color-scheme: dark;
   }
 
+  html,
   body {
     min-height: 100%;
-    color: var(--ink);
+    color: #f5f0eb;
+    background-color: #0c0a09; /* near-black — must win over any light fallback */
+  }
+
+  body {
     font-family: var(--font-sans);
+    color: var(--ink);
     background-color: var(--bg);
     background-image:
       radial-gradient(ellipse 70% 50% at 90% 10%, rgb(242 113 33 / 0.07), transparent 55%),
@@ -331,6 +337,7 @@
   }
 
   .btn-primary {
+    background: #f27121;
     background: var(--accent);
     color: #1a0c04;
     border: 1px solid transparent;
@@ -338,6 +345,7 @@
   }
 
   .btn-primary:hover:not(:disabled) {
+    background: #ff8538;
     background: var(--accent-hover);
   }
 

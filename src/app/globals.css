@@ -39,15 +39,17 @@
     0 -1px 0 rgb(0 0 0 / 0.25) inset,
     0 10px 28px rgb(0 0 0 / 0.35);
   --shadow-glow: 0 0 48px var(--accent-glow);
-  --font-sans: var(--font-dm-sans), "Segoe UI", sans-serif;
-  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  --font-sans: Helvetica, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: Helvetica, "Helvetica Neue", Arial, sans-serif;
+  --grid-line: rgb(255 255 255 / 0.035);
+  --grid-size: 28px;
 }
 
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--ink);
-  --font-sans: var(--font-dm-sans), "Segoe UI", sans-serif;
-  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  --font-sans: Helvetica, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: Helvetica, "Helvetica Neue", Arial, sans-serif;
 }
 
 @layer base {
@@ -67,15 +69,24 @@
   }
 
   body {
-    font-family: var(--font-sans);
+    font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
     color: var(--ink);
     background-color: var(--bg);
-    /* Soft orbs so frosted glass has something to blur */
+    /* Soft orbs + fine line grid behind glass panels */
     background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
       radial-gradient(ellipse 55% 45% at 12% 18%, rgb(242 113 33 / 0.14), transparent 55%),
       radial-gradient(ellipse 50% 40% at 88% 8%, rgb(180 90 40 / 0.12), transparent 50%),
       radial-gradient(ellipse 60% 50% at 70% 85%, rgb(242 113 33 / 0.08), transparent 55%),
       radial-gradient(ellipse 40% 35% at 20% 90%, rgb(60 40 30 / 0.5), transparent 60%);
+    background-size:
+      var(--grid-size) var(--grid-size),
+      var(--grid-size) var(--grid-size),
+      auto,
+      auto,
+      auto,
+      auto;
     background-attachment: fixed;
   }
 
@@ -294,7 +305,8 @@
   }
 
   .request-stat-value {
-    font-family: var(--font-mono);
+    font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
     font-size: 1.05rem;
     font-weight: 650;
     letter-spacing: -0.02em;
@@ -531,14 +543,14 @@
   }
 
   .amount {
-    font-family: var(--font-mono);
+    font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
     font-variant-numeric: tabular-nums;
     font-size: 0.875rem;
     font-weight: 500;
   }
 
   .amount-lg {
-    font-family: var(--font-mono);
+    font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
     font-variant-numeric: tabular-nums;
     font-size: 1.35rem;
     font-weight: 650;

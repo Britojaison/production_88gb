@@ -23,10 +23,10 @@ export default async function LoginPage() {
         </div>
         <div className="mt-7 rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-3.5 text-xs text-[var(--ink-muted)]">
           <p className="font-semibold text-[var(--ink)]">Demo accounts</p>
-          <p className="mt-1.5 font-mono text-[0.7rem] text-[var(--ink-faint)]">
+          <p className="mt-1.5 text-[0.7rem] text-[var(--ink-faint)]">
             team@88gb.local / password123
           </p>
-          <p className="font-mono text-[0.7rem] text-[var(--ink-faint)]">
+          <p className="text-[0.7rem] text-[var(--ink-faint)]">
             mgmt@88gb.local / password123
           </p>
         </div>

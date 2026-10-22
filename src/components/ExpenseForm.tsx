@@ -72,15 +72,15 @@ export function ExpenseForm({
   }
 
   return (
-    <form action={onSubmit} className="space-y-4" encType="multipart/form-data">
+    <form action={onSubmit} className="space-y-5" encType="multipart/form-data">
       {error ? (
-        <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <p className="rounded-md bg-[var(--danger-bg)] px-3 py-2 text-sm text-[var(--danger-ink)]">
           {error}
         </p>
       ) : null}
 
       <div>
-        <label htmlFor="title" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="title" className="field-label">
           Title
         </label>
         <input
@@ -88,13 +88,13 @@ export function ExpenseForm({
           name="title"
           required
           defaultValue={initial?.title ?? ""}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="field-input"
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="date" className="mb-1 block text-sm font-medium text-slate-700">
+          <label htmlFor="date" className="field-label">
             Date
           </label>
           <input
@@ -103,11 +103,11 @@ export function ExpenseForm({
             type="date"
             required
             defaultValue={initial?.date ?? ""}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
           />
         </div>
         <div>
-          <label htmlFor="amount" className="mb-1 block text-sm font-medium text-slate-700">
+          <label htmlFor="amount" className="field-label">
             Amount (INR)
           </label>
           <input
@@ -118,17 +118,14 @@ export function ExpenseForm({
             min="0.01"
             required
             defaultValue={initial?.amount ?? ""}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input amount"
           />
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label
-            htmlFor="categoryId"
-            className="mb-1 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="categoryId" className="field-label">
             Category
           </label>
           <select
@@ -136,7 +133,7 @@ export function ExpenseForm({
             name="categoryId"
             required
             defaultValue={initial?.categoryId ?? ""}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
           >
             <option value="" disabled>
               Select category
@@ -149,10 +146,7 @@ export function ExpenseForm({
           </select>
         </div>
         <div>
-          <label
-            htmlFor="vendorId"
-            className="mb-1 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="vendorId" className="field-label">
             Vendor directory (optional)
           </label>
           <select
@@ -160,7 +154,7 @@ export function ExpenseForm({
             name="vendorId"
             value={vendorId}
             onChange={(e) => onVendorChange(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
           >
             <option value="">One-off / custom payee</option>
             {vendors.map((v) => (
@@ -173,7 +167,7 @@ export function ExpenseForm({
       </div>
 
       <div>
-        <label htmlFor="paidTo" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="paidTo" className="field-label">
           Paid to
         </label>
         <input
@@ -182,15 +176,12 @@ export function ExpenseForm({
           required
           value={paidTo}
           onChange={(e) => setPaidTo(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="field-input"
         />
       </div>
 
       <div>
-        <label
-          htmlFor="vendorPaymentDetails"
-          className="mb-1 block text-sm font-medium text-slate-700"
-        >
+        <label htmlFor="vendorPaymentDetails" className="field-label">
           Vendor payment details
         </label>
         <textarea
@@ -200,12 +191,12 @@ export function ExpenseForm({
           rows={3}
           value={paymentDetails}
           onChange={(e) => setPaymentDetails(e.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="field-input"
         />
       </div>
 
       <div>
-        <label htmlFor="receipt" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="receipt" className="field-label">
           Receipt (image or PDF)
         </label>
         <input
@@ -213,21 +204,17 @@ export function ExpenseForm({
           name="receipt"
           type="file"
           accept="image/*,application/pdf"
-          className="block w-full text-sm text-slate-600"
+          className="block w-full text-sm text-[var(--ink-muted)] file:mr-3 file:rounded file:border-0 file:bg-[var(--accent-soft)] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-[var(--accent-ink)]"
         />
         {existingReceiptName ? (
-          <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-            <input type="checkbox" name="removeReceipt" />
+          <label className="mt-2 flex items-center gap-2 text-sm text-[var(--ink-muted)]">
+            <input type="checkbox" name="removeReceipt" className="accent-[var(--accent)]" />
             Remove current receipt ({existingReceiptName})
           </label>
         ) : null}
       </div>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className="btn btn-primary">
         {pending ? "Saving…" : submitLabel}
       </button>
     </form>

@@ -32,43 +32,47 @@ export function ShootCard({
   const remaining = budget != null ? budget - totalAmount : null;
 
   return (
-    <Link
-      href={`/shoots/${id}`}
-      className="group flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
-    >
-      <div className="relative aspect-[16/10] bg-slate-100">
+    <Link href={`/shoots/${id}`} className="shoot-card group">
+      <div className="shoot-card-image">
         <Image
           src={src}
           alt=""
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover transition duration-200 group-hover:scale-[1.02]"
+          className="object-cover"
         />
-      </div>
-      <div className="flex flex-1 flex-col gap-2 p-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h2 className="line-clamp-2 text-base font-semibold text-slate-900">
-              {name}
-            </h2>
-            {brandNames.length > 0 ? (
-              <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
-                {brandNames.join(" · ")}
-              </p>
-            ) : null}
-          </div>
+        <div className="absolute right-2 top-2 z-10">
           <ShootStatusBadge status={status as ShootStatus} />
         </div>
-        <p className="text-sm text-slate-600">
+      </div>
+      <div className="flex flex-1 flex-col gap-2.5 p-3.5">
+        <div className="min-w-0">
+          <h2 className="line-clamp-2 text-[0.95rem] font-semibold leading-snug tracking-tight text-[var(--ink)]">
+            {name}
+          </h2>
+          {brandNames.length > 0 ? (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {brandNames.slice(0, 3).map((b) => (
+                <span key={b} className="brand-chip truncate">
+                  {b}
+                </span>
+              ))}
+              {brandNames.length > 3 ? (
+                <span className="brand-chip">+{brandNames.length - 3}</span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        <p className="text-xs text-[var(--ink-muted)]">
           {formatDateRange(startDate, endDate)}
         </p>
-        <div className="mt-auto space-y-1 text-xs text-slate-500">
+        <div className="mt-auto space-y-1 border-t border-[var(--border)] pt-2.5 text-xs text-[var(--ink-muted)]">
           <div className="flex items-baseline justify-between gap-2">
             <span>
               {expenseCount === 1 ? "1 expense" : `${expenseCount} expenses`}
             </span>
-            <span className="font-medium text-slate-800">
-              Spent {formatCurrency(totalAmount)}
+            <span className="amount font-medium text-[var(--ink)]">
+              {formatCurrency(totalAmount)}
             </span>
           </div>
           {budget != null ? (
@@ -77,8 +81,8 @@ export function ShootCard({
               <span
                 className={
                   remaining != null && remaining < 0
-                    ? "font-medium text-rose-700"
-                    : "font-medium text-slate-700"
+                    ? "amount font-medium text-[var(--danger-ink)]"
+                    : "amount font-medium text-[var(--ink)]"
                 }
               >
                 Left {formatCurrency(remaining ?? 0)}

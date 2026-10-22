@@ -37,13 +37,13 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       {error ? (
-        <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <p className="rounded-md bg-[var(--danger-bg)] px-3 py-2 text-sm text-[var(--danger-ink)]">
           {error}
         </p>
       ) : null}
 
       <div>
-        <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="email" className="field-label">
           Email
         </label>
         <input
@@ -52,16 +52,13 @@ export function LoginForm() {
           type="email"
           required
           autoComplete="email"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="field-input"
           placeholder="team@88gb.local"
         />
       </div>
 
       <div>
-        <label
-          htmlFor="password"
-          className="mb-1 block text-sm font-medium text-slate-700"
-        >
+        <label htmlFor="password" className="field-label">
           Password
         </label>
         <input
@@ -70,15 +67,11 @@ export function LoginForm() {
           type="password"
           required
           autoComplete="current-password"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="field-input"
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className="btn btn-primary w-full">
         {pending ? "Signing in…" : "Sign in"}
       </button>
     </form>

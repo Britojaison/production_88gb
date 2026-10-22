@@ -34,17 +34,14 @@ export default async function EditShootPage({
   return (
     <>
       <AppHeader name={session.user.name} role={session.user.role} />
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
+      <main className="page-shell page-enter max-w-2xl">
         <div className="mb-4">
-          <Link
-            href={`/shoots/${shoot.id}`}
-            className="text-sm text-slate-600 hover:text-slate-900"
-          >
+          <Link href={`/shoots/${shoot.id}`} className="back-link">
             ← Back to shoot
           </Link>
         </div>
-        <h1 className="text-xl font-semibold text-slate-900">Edit shoot</h1>
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
+        <h1 className="page-title">Edit shoot</h1>
+        <div className="panel panel-pad mt-6 sm:!p-6">
           <ShootForm
             action={boundUpdate}
             brands={brands}

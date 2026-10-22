@@ -65,15 +65,15 @@ export function ShootForm({
   }
 
   return (
-    <form action={onSubmit} className="space-y-4">
+    <form action={onSubmit} className="space-y-5">
       {error ? (
-        <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <p className="rounded-md bg-[var(--danger-bg)] px-3 py-2 text-sm text-[var(--danger-ink)]">
           {error}
         </p>
       ) : null}
 
       <div>
-        <label htmlFor="name" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="name" className="field-label">
           Shoot name
         </label>
         <input
@@ -81,23 +81,23 @@ export function ShootForm({
           name="name"
           required
           defaultValue={initial?.name ?? ""}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="field-input"
           placeholder="Brand Film — Q4 Campaign"
         />
       </div>
 
       <div>
-        <p className="mb-1 text-sm font-medium text-slate-700">
-          Brands / clients
-        </p>
-        <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2">
+        <p className="field-label">Brands / clients</p>
+        <div className="max-h-40 space-y-0.5 overflow-y-auto rounded-md border border-[var(--border)] bg-[var(--surface)] p-2">
           {brands.length === 0 ? (
-            <p className="text-xs text-slate-500">No brands yet — add below.</p>
+            <p className="px-1 py-1 text-xs text-[var(--ink-faint)]">
+              No brands yet — add below.
+            </p>
           ) : (
             brands.map((b) => (
               <label
                 key={b.id}
-                className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-sm hover:bg-slate-50"
+                className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-sm hover:bg-[var(--surface-raised)]"
               >
                 <input
                   type="checkbox"
@@ -105,32 +105,27 @@ export function ShootForm({
                   value={b.id}
                   checked={selected.includes(b.id)}
                   onChange={() => toggleBrand(b.id)}
+                  className="accent-[var(--accent)]"
                 />
                 <span>{b.name}</span>
               </label>
             ))
           )}
         </div>
-        <label
-          htmlFor="newBrands"
-          className="mt-2 mb-1 block text-xs font-medium text-slate-600"
-        >
+        <label htmlFor="newBrands" className="field-label mt-2.5">
           Add new brand(s) — comma-separated; saved to directory
         </label>
         <input
           id="newBrands"
           name="newBrands"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="field-input"
           placeholder="e.g. New Client Co, Another Brand"
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label
-            htmlFor="startDate"
-            className="mb-1 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="startDate" className="field-label">
             Start date
           </label>
           <input
@@ -139,14 +134,11 @@ export function ShootForm({
             type="date"
             required
             defaultValue={initial?.startDate ?? ""}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
           />
         </div>
         <div>
-          <label
-            htmlFor="endDate"
-            className="mb-1 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="endDate" className="field-label">
             End date (optional)
           </label>
           <input
@@ -154,21 +146,21 @@ export function ShootForm({
             name="endDate"
             type="date"
             defaultValue={initial?.endDate ?? ""}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
           />
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="status" className="mb-1 block text-sm font-medium text-slate-700">
+          <label htmlFor="status" className="field-label">
             Status
           </label>
           <select
             id="status"
             name="status"
             defaultValue={initial?.status ?? "PLANNED"}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
           >
             {SHOOT_STATUSES.map((status) => (
               <option key={status} value={status}>
@@ -178,14 +170,14 @@ export function ShootForm({
           </select>
         </div>
         <div>
-          <label htmlFor="image" className="mb-1 block text-sm font-medium text-slate-700">
+          <label htmlFor="image" className="field-label">
             Card image
           </label>
           <select
             id="image"
             name="image"
             defaultValue={initial?.image ?? RANDOM_SHOOT_IMAGE}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
           >
             <option value={RANDOM_SHOOT_IMAGE}>Random from pool</option>
             {SHOOT_IMAGE_OPTIONS.map((path) => (
@@ -198,7 +190,7 @@ export function ShootForm({
       </div>
 
       <div>
-        <label htmlFor="budget" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="budget" className="field-label">
           Budget INR (optional)
         </label>
         <input
@@ -208,13 +200,13 @@ export function ShootForm({
           min="0"
           step="0.01"
           defaultValue={initial?.budget ?? ""}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="field-input amount"
           placeholder="50000"
         />
       </div>
 
       <div>
-        <label htmlFor="notes" className="mb-1 block text-sm font-medium text-slate-700">
+        <label htmlFor="notes" className="field-label">
           Notes (optional)
         </label>
         <textarea
@@ -222,16 +214,12 @@ export function ShootForm({
           name="notes"
           rows={3}
           defaultValue={initial?.notes ?? ""}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="field-input"
           placeholder="Location, crew notes, client…"
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className="btn btn-primary">
         {pending ? "Saving…" : submitLabel}
       </button>
     </form>

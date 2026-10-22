@@ -30,20 +30,18 @@ export default async function NewShootExpensePage({
   return (
     <>
       <AppHeader name={session.user.name} role={session.user.role} />
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
+      <main className="page-shell page-enter max-w-2xl">
         <div className="mb-4">
-          <Link
-            href={`/shoots/${shoot.id}`}
-            className="text-sm text-slate-600 hover:text-slate-900"
-          >
+          <Link href={`/shoots/${shoot.id}`} className="back-link">
             ← Back to {shoot.name}
           </Link>
         </div>
-        <h1 className="text-xl font-semibold text-slate-900">New expense</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          For shoot: <span className="font-medium text-slate-800">{shoot.name}</span>
+        <h1 className="page-title">New expense</h1>
+        <p className="page-lead">
+          For shoot:{" "}
+          <span className="font-medium text-[var(--ink)]">{shoot.name}</span>
         </p>
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
+        <div className="panel panel-pad mt-6 sm:!p-6">
           <ExpenseForm
             action={boundCreate}
             initial={{ date: today, categoryId: categories[0]?.id }}

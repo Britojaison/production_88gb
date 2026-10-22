@@ -12,26 +12,24 @@ export default async function UsersPage() {
   return (
     <>
       <AppHeader name={session.user.name} role={session.user.role} />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
-        <h1 className="text-xl font-semibold text-slate-900">Users</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Create video team or management accounts.
-        </p>
+      <main className="page-shell page-enter max-w-3xl">
+        <h1 className="page-title">Users</h1>
+        <p className="page-lead">Create video team or management accounts.</p>
 
-        <form action={createUser} className="mt-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-          <h2 className="text-sm font-semibold text-slate-900">Add user</h2>
+        <form action={createUser} className="panel panel-pad mt-6 space-y-3">
+          <h2 className="text-sm font-semibold text-[var(--ink)]">Add user</h2>
           <input
             name="name"
             required
             placeholder="Name"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
           />
           <input
             name="email"
             type="email"
             required
             placeholder="Email"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
           />
           <input
             name="password"
@@ -39,39 +37,36 @@ export default async function UsersPage() {
             required
             minLength={8}
             placeholder="Password (min 8)"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
           />
           <select
             name="role"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="field-input"
             defaultValue="VIDEO_TEAM"
           >
             <option value="VIDEO_TEAM">video_team</option>
             <option value="MANAGEMENT">management</option>
           </select>
-          <button
-            type="submit"
-            className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white"
-          >
+          <button type="submit" className="btn btn-primary">
             Create user
           </button>
         </form>
 
-        <div className="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500">
+        <div className="data-table-wrap mt-6">
+          <table className="data-table">
+            <thead>
               <tr>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Email</th>
-                <th className="px-3 py-2">Role</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
               </tr>
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.id} className="border-b last:border-0">
-                  <td className="px-3 py-2">{u.name}</td>
-                  <td className="px-3 py-2">{u.email}</td>
-                  <td className="px-3 py-2">{u.role}</td>
+                <tr key={u.id}>
+                  <td>{u.name}</td>
+                  <td className="text-[var(--ink-muted)]">{u.email}</td>
+                  <td className="text-[var(--ink-muted)]">{u.role}</td>
                 </tr>
               ))}
             </tbody>

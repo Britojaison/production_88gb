@@ -50,56 +50,59 @@ export default async function ShootsPage({
   return (
     <>
       <AppHeader name={session.user.name} role={session.user.role} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <main className="page-shell page-enter">
+        <div className="page-header">
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">Shoots</h1>
-            <p className="text-sm text-slate-600">
-              Open a shoot to manage its expenses.
-            </p>
+            <h1 className="page-title">Shoots</h1>
+            <p className="page-lead">Open a shoot to manage its expenses.</p>
           </div>
-          <Link
-            href="/shoots/new"
-            className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          >
+          <Link href="/shoots/new" className="btn btn-primary">
             New shoot
           </Link>
         </div>
 
-        <form
-          method="get"
-          className="mb-4 flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-white p-3"
-        >
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="Search shoots…"
-            className="min-w-[12rem] flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-          />
-          <select
-            name="status"
-            defaultValue={params.status ?? "ALL"}
-            className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-          >
-            <option value="ALL">All statuses</option>
-            {SHOOT_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
-          >
-            Filter
-          </button>
+        <form method="get" className="filter-bar !grid-cols-1 sm:!grid-cols-[1fr_auto_auto]">
+          <div>
+            <label className="field-label" htmlFor="shoots-q">
+              Search
+            </label>
+            <input
+              id="shoots-q"
+              name="q"
+              defaultValue={q}
+              placeholder="Name, notes, or brand…"
+              className="field-input"
+            />
+          </div>
+          <div>
+            <label className="field-label" htmlFor="shoots-status">
+              Status
+            </label>
+            <select
+              id="shoots-status"
+              name="status"
+              defaultValue={params.status ?? "ALL"}
+              className="field-input"
+            >
+              <option value="ALL">All statuses</option>
+              {SHOOT_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button type="submit" className="btn btn-primary w-full sm:w-auto">
+              Filter
+            </button>
+          </div>
         </form>
 
         {shoots.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-600">
+          <div className="panel-dashed p-8 text-center text-sm text-[var(--ink-muted)]">
             No shoots match.{" "}
-            <Link href="/shoots/new" className="font-medium text-slate-900 underline">
+            <Link href="/shoots/new" className="font-medium text-[var(--accent-ink)] underline">
               Create a shoot
             </Link>
             .

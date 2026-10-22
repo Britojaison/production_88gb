@@ -19,67 +19,98 @@ export function ExpenseFilters({
   showStatus?: boolean;
 }) {
   return (
-    <form
-      method="get"
-      action={action}
-      className="mb-4 grid gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-6"
-    >
-      <input
-        name="q"
-        defaultValue={defaults?.q ?? ""}
-        placeholder="Search title / payee / shoot"
-        className="rounded-md border border-slate-300 px-2 py-1.5 text-sm lg:col-span-2"
-      />
+    <form method="get" action={action} className="filter-bar">
+      <div className="lg:col-span-2">
+        <label className="field-label" htmlFor="filter-q">
+          Search
+        </label>
+        <input
+          id="filter-q"
+          name="q"
+          defaultValue={defaults?.q ?? ""}
+          placeholder="Title, payee, shoot…"
+          className="field-input"
+        />
+      </div>
       {showStatus ? (
+        <div>
+          <label className="field-label" htmlFor="filter-status">
+            Status
+          </label>
+          <select
+            id="filter-status"
+            name="status"
+            defaultValue={defaults?.status ?? "ALL"}
+            className="field-input"
+          >
+            <option value="ALL">All statuses</option>
+            {EXPENSE_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+      <div>
+        <label className="field-label" htmlFor="filter-category">
+          Category
+        </label>
         <select
-          name="status"
-          defaultValue={defaults?.status ?? "ALL"}
-          className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          id="filter-category"
+          name="categoryId"
+          defaultValue={defaults?.categoryId ?? ""}
+          className="field-input"
         >
-          <option value="ALL">All statuses</option>
-          {EXPENSE_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
+          <option value="">All categories</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
             </option>
           ))}
         </select>
-      ) : null}
-      <select
-        name="categoryId"
-        defaultValue={defaults?.categoryId ?? ""}
-        className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-      >
-        <option value="">All categories</option>
-        {categories.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
-      <input
-        name="paidTo"
-        defaultValue={defaults?.paidTo ?? ""}
-        placeholder="Payee contains…"
-        className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-      />
-      <input
-        name="from"
-        type="date"
-        defaultValue={defaults?.from ?? ""}
-        className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-      />
-      <input
-        name="to"
-        type="date"
-        defaultValue={defaults?.to ?? ""}
-        className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-      />
-      <button
-        type="submit"
-        className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 sm:col-span-2 lg:col-span-1"
-      >
-        Filter
-      </button>
+      </div>
+      <div>
+        <label className="field-label" htmlFor="filter-paidTo">
+          Payee
+        </label>
+        <input
+          id="filter-paidTo"
+          name="paidTo"
+          defaultValue={defaults?.paidTo ?? ""}
+          placeholder="Contains…"
+          className="field-input"
+        />
+      </div>
+      <div>
+        <label className="field-label" htmlFor="filter-from">
+          From
+        </label>
+        <input
+          id="filter-from"
+          name="from"
+          type="date"
+          defaultValue={defaults?.from ?? ""}
+          className="field-input"
+        />
+      </div>
+      <div>
+        <label className="field-label" htmlFor="filter-to">
+          To
+        </label>
+        <input
+          id="filter-to"
+          name="to"
+          type="date"
+          defaultValue={defaults?.to ?? ""}
+          className="field-input"
+        />
+      </div>
+      <div className="flex items-end sm:col-span-2 lg:col-span-1">
+        <button type="submit" className="btn btn-primary w-full">
+          Filter
+        </button>
+      </div>
     </form>
   );
 }

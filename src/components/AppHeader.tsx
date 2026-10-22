@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NavLinks } from "@/components/NavLinks";
 import { SignOutButton } from "@/components/SignOutButton";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
@@ -27,63 +28,23 @@ export async function AppHeader({
   }
 
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <div className="flex flex-wrap items-center gap-4">
-          <Link href={home} className="text-lg font-semibold text-slate-900">
-            88GB Production Expenses
+    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-raised)_92%,transparent)] backdrop-blur-md">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
+        <div className="flex min-w-0 flex-wrap items-center gap-5">
+          <Link
+            href={home}
+            className="shrink-0 text-[0.95rem] font-semibold tracking-tight text-[var(--ink)]"
+          >
+            <span className="text-[var(--accent)]">88GB</span>{" "}
+            <span className="font-medium text-[var(--ink-muted)]">Expenses</span>
           </Link>
-          <nav className="flex flex-wrap gap-3 text-sm">
-            {role === "VIDEO_TEAM" ? (
-              <>
-                <Link href="/shoots" className="text-slate-600 hover:text-slate-900">
-                  Shoots
-                </Link>
-                <Link href="/shoots/new" className="text-slate-600 hover:text-slate-900">
-                  New shoot
-                </Link>
-                <Link href="/vendors" className="text-slate-600 hover:text-slate-900">
-                  Vendors
-                </Link>
-                <Link href="/brands" className="text-slate-600 hover:text-slate-900">
-                  Brands
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/management" className="text-slate-600 hover:text-slate-900">
-                  Reviews
-                </Link>
-                <Link
-                  href="/management/users"
-                  className="text-slate-600 hover:text-slate-900"
-                >
-                  Users
-                </Link>
-                <Link
-                  href="/management/categories"
-                  className="text-slate-600 hover:text-slate-900"
-                >
-                  Categories
-                </Link>
-                <Link href="/vendors" className="text-slate-600 hover:text-slate-900">
-                  Vendors
-                </Link>
-                <Link href="/brands" className="text-slate-600 hover:text-slate-900">
-                  Brands
-                </Link>
-              </>
-            )}
-            <Link href="/notifications" className="text-slate-600 hover:text-slate-900">
-              Alerts{unread > 0 ? ` (${unread})` : ""}
-            </Link>
-          </nav>
+          <NavLinks role={role} unread={unread} />
         </div>
-        <div className="flex items-center gap-3 text-sm text-slate-600">
-          <span>
+        <div className="flex items-center gap-3 text-sm text-[var(--ink-muted)]">
+          <span className="hidden sm:inline">
             {name}{" "}
-            <span className="text-slate-400">
-              ({role === "MANAGEMENT" ? "management" : "video team"})
+            <span className="text-[var(--ink-faint)]">
+              · {role === "MANAGEMENT" ? "management" : "video team"}
             </span>
           </span>
           <SignOutButton />

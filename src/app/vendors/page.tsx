@@ -13,42 +13,48 @@ export default async function VendorsPage() {
   return (
     <>
       <AppHeader name={user.name} role={user.role as Role} />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
-        <h1 className="text-xl font-semibold text-slate-900">Vendor directory</h1>
-        <p className="mt-1 text-sm text-slate-600">
+      <main className="page-shell page-enter max-w-3xl">
+        <h1 className="page-title">Vendor directory</h1>
+        <p className="page-lead">
           Pick a vendor on expense forms to prefills payee + payment details.
         </p>
 
-        <form action={createVendor} className="mt-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-          <input
-            name="name"
-            required
-            placeholder="Vendor name"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-          <textarea
-            name="paymentDetails"
-            required
-            rows={3}
-            placeholder="Default payment details"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white"
-          >
+        <form action={createVendor} className="panel panel-pad mt-6 space-y-3">
+          <div>
+            <label htmlFor="vendor-name" className="field-label">
+              Vendor name
+            </label>
+            <input
+              id="vendor-name"
+              name="name"
+              required
+              placeholder="Vendor name"
+              className="field-input"
+            />
+          </div>
+          <div>
+            <label htmlFor="vendor-details" className="field-label">
+              Default payment details
+            </label>
+            <textarea
+              id="vendor-details"
+              name="paymentDetails"
+              required
+              rows={3}
+              placeholder="UPI / bank / cheque notes"
+              className="field-input"
+            />
+          </div>
+          <button type="submit" className="btn btn-primary">
             Add vendor
           </button>
         </form>
 
-        <ul className="mt-6 space-y-3">
+        <ul className="mt-6 space-y-2.5">
           {vendors.map((v) => (
-            <li
-              key={v.id}
-              className="rounded-lg border border-slate-200 bg-white p-3 text-sm"
-            >
-              <p className="font-medium text-slate-900">{v.name}</p>
-              <p className="mt-1 whitespace-pre-wrap text-slate-600">
+            <li key={v.id} className="panel panel-pad text-sm">
+              <p className="font-semibold tracking-tight text-[var(--ink)]">{v.name}</p>
+              <p className="mt-1.5 whitespace-pre-wrap text-[var(--ink-muted)]">
                 {v.paymentDetails}
               </p>
             </li>

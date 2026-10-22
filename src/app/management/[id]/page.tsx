@@ -42,68 +42,65 @@ export default async function ManagementExpensePage({
   return (
     <>
       <AppHeader name={session.user.name} role={session.user.role} />
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
+      <main className="page-shell page-enter max-w-2xl">
         <div className="mb-4">
-          <Link
-            href="/management"
-            className="text-sm text-slate-600 hover:text-slate-900"
-          >
+          <Link href="/management" className="back-link">
             ← Back to reviews
           </Link>
         </div>
 
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="page-header">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-faint)]">
               Shoot: {expense.shoot.name}
             </p>
-            <h1 className="text-xl font-semibold text-slate-900">{expense.title}</h1>
-            <p className="mt-1 text-sm text-slate-600">
+            <h1 className="page-title mt-0.5">{expense.title}</h1>
+            <p className="mt-1 text-sm text-[var(--ink-muted)]">
               From {expense.submitter.name} ({expense.submitter.email})
             </p>
           </div>
           <StatusBadge status={expense.status as ExpenseStatus} />
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm sm:p-6">
+        <div className="panel panel-pad text-sm sm:!p-6">
           <dl className="space-y-3">
             <div>
-              <dt className="text-slate-500">Category</dt>
-              <dd className="font-medium text-slate-900">
+              <dt className="text-[var(--ink-faint)]">Category</dt>
+              <dd className="font-medium text-[var(--ink)]">
                 {expense.category?.name ?? "—"}
               </dd>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <dt className="text-slate-500">Expense date</dt>
-                <dd className="font-medium text-slate-900">
+                <dt className="text-[var(--ink-faint)]">Expense date</dt>
+                <dd className="font-medium text-[var(--ink)]">
                   {formatDate(expense.date)}
                 </dd>
               </div>
               <div>
-                <dt className="text-slate-500">Amount</dt>
-                <dd className="font-medium text-slate-900">
+                <dt className="text-[var(--ink-faint)]">Amount</dt>
+                <dd className="amount font-medium text-[var(--ink)]">
                   {formatCurrency(expense.amount)}
                 </dd>
               </div>
             </div>
             <div>
-              <dt className="text-slate-500">Paid to</dt>
-              <dd className="font-medium text-slate-900">{expense.paidTo}</dd>
+              <dt className="text-[var(--ink-faint)]">Paid to</dt>
+              <dd className="font-medium text-[var(--ink)]">{expense.paidTo}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Vendor payment details</dt>
-              <dd className="whitespace-pre-wrap text-slate-900">
+              <dt className="text-[var(--ink-faint)]">Vendor payment details</dt>
+              <dd className="whitespace-pre-wrap text-[var(--ink)]">
                 {expense.vendorPaymentDetails}
               </dd>
             </div>
             {expense.receiptPath ? (
               <div>
-                <dt className="text-slate-500">Receipt</dt>
+                <dt className="text-[var(--ink-faint)]">Receipt</dt>
                 <dd>
                   <a
                     href={publicUploadUrl(expense.receiptPath)}
-                    className="font-medium underline"
+                    className="font-medium text-[var(--accent-ink)] underline"
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -114,8 +111,8 @@ export default async function ManagementExpensePage({
             ) : null}
             {expense.rejectionReason ? (
               <div>
-                <dt className="text-slate-500">Rejection reason</dt>
-                <dd className="text-rose-700">{expense.rejectionReason}</dd>
+                <dt className="text-[var(--ink-faint)]">Rejection reason</dt>
+                <dd className="text-[var(--danger-ink)]">{expense.rejectionReason}</dd>
               </div>
             ) : null}
           </dl>
@@ -126,19 +123,13 @@ export default async function ManagementExpensePage({
             <form action={boundApprove}>
               <button
                 type="submit"
-                className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800"
+                className="btn bg-[var(--ok-ink)] text-white hover:opacity-90"
               >
                 Approve
               </button>
             </form>
-            <form
-              action={boundReject}
-              className="rounded-lg border border-slate-200 bg-white p-4"
-            >
-              <label
-                htmlFor="reason"
-                className="mb-1 block text-sm font-medium text-slate-700"
-              >
+            <form action={boundReject} className="panel panel-pad">
+              <label htmlFor="reason" className="field-label">
                 Reject with reason
               </label>
               <textarea
@@ -146,11 +137,11 @@ export default async function ManagementExpensePage({
                 name="reason"
                 required
                 rows={3}
-                className="mb-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="field-input mb-3"
               />
               <button
                 type="submit"
-                className="rounded-md bg-rose-700 px-4 py-2 text-sm font-medium text-white hover:bg-rose-800"
+                className="btn bg-[var(--danger-ink)] text-white hover:opacity-90"
               >
                 Reject
               </button>
@@ -159,18 +150,19 @@ export default async function ManagementExpensePage({
         ) : null}
 
         <section className="mt-8">
-          <h2 className="mb-2 text-sm font-semibold text-slate-900">Audit trail</h2>
+          <h2 className="mb-2 text-sm font-semibold text-[var(--ink)]">
+            Audit trail
+          </h2>
           <ul className="space-y-2 text-sm">
             {expense.auditEvents.map((ev) => (
-              <li
-                key={ev.id}
-                className="rounded-md border border-slate-200 bg-white px-3 py-2"
-              >
-                <p className="font-medium text-slate-900">{ev.action}</p>
-                <p className="text-slate-600">
+              <li key={ev.id} className="panel px-3.5 py-2.5">
+                <p className="font-medium text-[var(--ink)]">{ev.action}</p>
+                <p className="text-[var(--ink-muted)]">
                   {ev.actor?.name ?? "System"} · {formatDate(ev.createdAt)}
                 </p>
-                {ev.note ? <p className="mt-1 text-slate-700">{ev.note}</p> : null}
+                {ev.note ? (
+                  <p className="mt-1 text-[var(--ink-muted)]">{ev.note}</p>
+                ) : null}
               </li>
             ))}
           </ul>

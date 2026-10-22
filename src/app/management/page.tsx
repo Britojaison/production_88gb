@@ -49,17 +49,17 @@ export default async function ManagementPage({
   return (
     <>
       <AppHeader name={session.user.name} role={session.user.role} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <main className="page-shell page-enter">
+        <div className="page-header">
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">Expense reviews</h1>
-            <p className="text-sm text-slate-600">
+            <h1 className="page-title">Expense reviews</h1>
+            <p className="page-lead">
               Filter pending or historical expenses. Defaults to submitted.
             </p>
           </div>
           <Link
             href={`/api/export/management?${exportQs.toString()}`}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="btn btn-secondary"
           >
             Export CSV
           </Link>
@@ -72,42 +72,46 @@ export default async function ManagementPage({
         />
 
         {expenses.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-600">
+          <div className="panel-dashed p-8 text-center text-sm text-[var(--ink-muted)]">
             No expenses match these filters.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <th className="px-3 py-2 font-medium">Shoot</th>
-                  <th className="px-3 py-2 font-medium">Title</th>
-                  <th className="px-3 py-2 font-medium">Category</th>
-                  <th className="px-3 py-2 font-medium">Submitter</th>
-                  <th className="px-3 py-2 font-medium">Amount</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
+                  <th>Shoot</th>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Submitter</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {expenses.map((expense) => (
-                  <tr key={expense.id} className="border-b border-slate-100 last:border-0">
-                    <td className="px-3 py-2 text-slate-700">{expense.shoot.name}</td>
-                    <td className="px-3 py-2">
+                  <tr key={expense.id}>
+                    <td className="text-[var(--ink-muted)]">{expense.shoot.name}</td>
+                    <td>
                       <Link
                         href={`/management/${expense.id}`}
-                        className="font-medium text-slate-900 hover:underline"
+                        className="font-medium text-[var(--ink)] hover:text-[var(--accent-ink)] hover:underline"
                       >
                         {expense.title}
                       </Link>
                     </td>
-                    <td className="px-3 py-2 text-slate-600">
+                    <td className="text-[var(--ink-muted)]">
                       {expense.category?.name ?? "—"}
                     </td>
-                    <td className="px-3 py-2 text-slate-600">
+                    <td className="text-[var(--ink-muted)]">
                       {expense.submitter.name}
                     </td>
-                    <td className="px-3 py-2">{formatCurrency(expense.amount)}</td>
-                    <td className="px-3 py-2">
+                    <td className="text-[var(--ink-muted)]">
+                      {formatDate(expense.date)}
+                    </td>
+                    <td className="amount">{formatCurrency(expense.amount)}</td>
+                    <td>
                       <StatusBadge status={expense.status as ExpenseStatus} />
                     </td>
                   </tr>

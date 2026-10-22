@@ -22,48 +22,53 @@ export default async function NotificationsPage() {
   return (
     <>
       <AppHeader name={user.name} role={user.role as Role} />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold text-slate-900">Notifications</h1>
+      <main className="page-shell page-enter max-w-3xl">
+        <div className="page-header">
+          <h1 className="page-title">Notifications</h1>
           <form action={markAllNotificationsRead}>
-            <button
-              type="submit"
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm"
-            >
+            <button type="submit" className="btn btn-secondary">
               Mark all read
             </button>
           </form>
         </div>
 
         {notifications.length === 0 ? (
-          <p className="text-sm text-slate-600">No notifications yet.</p>
+          <p className="text-sm text-[var(--ink-muted)]">No notifications yet.</p>
         ) : (
           <ul className="space-y-2">
             {notifications.map((n) => (
               <li
                 key={n.id}
-                className={`rounded-lg border px-3 py-2 text-sm ${
+                className={`panel px-3.5 py-2.5 text-sm ${
                   n.read
-                    ? "border-slate-200 bg-white"
-                    : "border-amber-200 bg-amber-50"
+                    ? ""
+                    : "border-[color-mix(in_srgb,var(--warn-ink)_25%,var(--border))] bg-[var(--warn-bg)]"
                 }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="font-medium text-slate-900">{n.title}</p>
-                    <p className="text-slate-700">{n.body}</p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="font-semibold tracking-tight text-[var(--ink)]">
+                      {n.title}
+                    </p>
+                    <p className="text-[var(--ink-muted)]">{n.body}</p>
+                    <p className="mt-1 text-xs text-[var(--ink-faint)]">
                       {formatDate(n.createdAt)}
                     </p>
                     {n.href ? (
-                      <Link href={n.href} className="mt-1 inline-block underline">
+                      <Link
+                        href={n.href}
+                        className="mt-1 inline-block text-[var(--accent-ink)] underline"
+                      >
                         Open
                       </Link>
                     ) : null}
                   </div>
                   {!n.read ? (
                     <form action={markNotificationRead.bind(null, n.id)}>
-                      <button type="submit" className="text-xs underline">
+                      <button
+                        type="submit"
+                        className="text-xs text-[var(--accent-ink)] underline"
+                      >
                         Mark read
                       </button>
                     </form>

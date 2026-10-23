@@ -42,20 +42,28 @@ export function ShootCard({
           <ShootStatusBadge status={status as ShootStatus} />
         </div>
         {shown.length === 0 ? (
-          <div className="brand-mark-fallback" aria-hidden>
-            —
+          <div className="shoot-card-logo-row" data-count="1">
+            <div className="brand-mark-fallback" aria-hidden>
+              —
+            </div>
           </div>
         ) : (
-          <div className="shoot-card-logo-row">
+          <div
+            className="shoot-card-logo-row"
+            data-count={String(shown.length + (extra > 0 ? 1 : 0))}
+          >
             {shown.map((brand) =>
               brand.logoPath ? (
-                <span key={brand.name} className="brand-logo-tile" title={brand.name}>
+                <span
+                  key={brand.name}
+                  className="brand-logo-tile"
+                  title={brand.name}
+                >
                   <Image
                     src={brand.logoPath}
                     alt={brand.name}
-                    width={96}
-                    height={96}
-                    sizes="48px"
+                    fill
+                    sizes="(max-width: 640px) 90vw, (max-width: 1280px) 40vw, 28vw"
                     className="brand-logo-img"
                   />
                 </span>

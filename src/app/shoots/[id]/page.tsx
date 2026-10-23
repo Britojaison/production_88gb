@@ -102,7 +102,7 @@ export default async function ShootDetailPage({
                 {shoot.notes}
               </p>
             ) : null}
-            <div className="panel panel-glow mt-5 grid max-w-xl gap-4 p-4 sm:grid-cols-3">
+            <div className="panel mt-5 grid max-w-xl gap-4 p-4 sm:grid-cols-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
                   Spent

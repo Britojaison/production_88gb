@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -151,7 +152,14 @@ export function AppChrome({
 
       <aside className="app-sidebar" aria-label="Main navigation">
         <Link href={home} className="app-sidebar-logo" title="88GB Expenses">
-          88
+          <Image
+            src="/88gb-logo.png"
+            alt="88GB"
+            width={198}
+            height={156}
+            sizes="40px"
+            priority
+          />
         </Link>
         <nav className="sidebar-nav">
           {items.map((item) => {

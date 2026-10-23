@@ -71,12 +71,12 @@ export function shootStatusLabel(status: ShootStatus) {
 export function shootStatusClass(status: ShootStatus) {
   switch (status) {
     case "PLANNED":
-      return "bg-[var(--bg)]/80 text-[var(--ink-muted)] border border-[var(--border-strong)] backdrop-blur-sm";
+      return "bg-[var(--surface-raised)] text-[var(--ink-muted)] border border-[var(--border-strong)]";
     case "ACTIVE":
-      return "bg-[var(--accent)] text-[#1a0c04] border border-transparent shadow-[0_0_16px_var(--accent-glow)]";
+      return "bg-[var(--accent-soft)] text-[var(--accent-ink)] border border-[var(--border-strong)]";
     case "WRAPPED":
-      return "bg-[var(--ok-bg)] text-[var(--ok-ink)] border border-transparent backdrop-blur-sm";
+      return "bg-[var(--ok-bg)] text-[var(--ok-ink)] border border-transparent";
     default:
-      return "bg-[var(--bg)]/80 text-[var(--ink-muted)] border border-[var(--border)]";
+      return "bg-[var(--surface-raised)] text-[var(--ink-muted)] border border-[var(--border)]";
   }
 }

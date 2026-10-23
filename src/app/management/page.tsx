@@ -19,16 +19,22 @@ export default async function ManagementPage({
   const session = await requireRole("MANAGEMENT");
   const filters = await searchParams;
 
-  const statusDefault = filters.status ?? "SUBMITTED";
+  // Imported queue is mostly APPROVED + unpaid — don't default to SUBMITTED
+  const statusDefault = filters.status ?? "ALL";
+  const paidDefault = filters.paid ?? "UNPAID";
   const where = buildExpenseWhere({
     q: filters.q,
     status: statusDefault,
     categoryId: filters.categoryId,
     paidTo: filters.paidTo,
-    paid: filters.paid,
+    paid: paidDefault,
     from: filters.from,
     to: filters.to,
   });
+  // Always hide drafts on the review queue unless explicitly filtered
+  if (statusDefault === "ALL") {
+    where.status = { in: ["SUBMITTED", "APPROVED", "REJECTED"] };
+  }
 
   const [categories, expenses] = await Promise.all([
     prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
@@ -39,12 +45,16 @@ export default async function ManagementPage({
         shoot: { select: { name: true } },
         category: true,
       },
-      orderBy: { submittedAt: "asc" },
+      orderBy: [{ paid: "asc" }, { submittedAt: "asc" }, { date: "asc" }],
     }),
   ]);
 
   const exportQs = new URLSearchParams();
-  for (const [k, v] of Object.entries({ ...filters, status: statusDefault })) {
+  for (const [k, v] of Object.entries({
+    ...filters,
+    status: statusDefault,
+    paid: paidDefault,
+  })) {
     if (v) exportQs.set(k, v);
   }
 
@@ -55,8 +65,9 @@ export default async function ManagementPage({
           <div>
             <h1 className="page-title">Expense reviews</h1>
             <p className="page-lead">
-              Filter pending or historical expenses. Defaults to submitted.
-              Settlement Paid is separate from payee (Paid to).
+              Review queue defaults to unpaid (non-draft). Narrow with status,
+              settlement, or search. Settlement Paid is separate from payee
+              (Paid to).
             </p>
           </div>
           <Link
@@ -70,7 +81,11 @@ export default async function ManagementPage({
         <ExpenseFilters
           action="/management"
           categories={categories}
-          defaults={{ ...filters, status: statusDefault }}
+          defaults={{
+            ...filters,
+            status: statusDefault,
+            paid: paidDefault,
+          }}
         />
 
         {expenses.length === 0 ? (

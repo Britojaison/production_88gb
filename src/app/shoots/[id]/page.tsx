@@ -6,7 +6,7 @@ import { PaidBadge, ShootStatusBadge, StatusBadge } from "@/components/StatusBad
 import { buildExpenseWhere } from "@/lib/expense-query";
 import { formatCurrency, formatDate, formatDateRange } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/session";
+import { requireAnyRole } from "@/lib/session";
 import type { ExpenseStatus, ShootStatus } from "@/lib/types";
 import { publicUploadUrl } from "@/lib/uploads";
 
@@ -21,7 +21,8 @@ export default async function ShootDetailPage({
 }) {
   const { id } = await params;
   const filters = await searchParams;
-  const session = await requireRole("VIDEO_TEAM");
+  const session = await requireAnyRole("VIDEO_TEAM", "MANAGEMENT");
+  const isMgmt = session.user.role === "MANAGEMENT";
 
   const shoot = await prisma.shoot.findUnique({
     where: { id },
@@ -46,7 +47,10 @@ export default async function ShootDetailPage({
     from: filters.from,
     to: filters.to,
   });
-  where.submitterId = session.user.id;
+  // Team only sees their own rows; management sees every expense on the shoot
+  if (!isMgmt) {
+    where.submitterId = session.user.id;
+  }
 
   const expenses = await prisma.expense.findMany({
     where,
@@ -54,8 +58,11 @@ export default async function ShootDetailPage({
     orderBy: { updatedAt: "desc" },
   });
 
+  const totalsWhere = isMgmt
+    ? { shootId: shoot.id }
+    : { shootId: shoot.id, submitterId: session.user.id };
   const allForTotals = await prisma.expense.findMany({
-    where: { shootId: shoot.id, submitterId: session.user.id },
+    where: totalsWhere,
     include: { category: true },
   });
   const spent = allForTotals.reduce((s, e) => s + e.amount, 0);
@@ -142,15 +149,26 @@ export default async function ShootDetailPage({
             >
               Export CSV
             </Link>
-            <Link href={`/shoots/${shoot.id}/edit`} className="btn btn-secondary">
-              Edit shoot
-            </Link>
-            <Link
-              href={`/shoots/${shoot.id}/expenses/new`}
-              className="btn btn-primary"
-            >
-              Add expense
-            </Link>
+            {!isMgmt ? (
+              <>
+                <Link
+                  href={`/shoots/${shoot.id}/edit`}
+                  className="btn btn-secondary"
+                >
+                  Edit shoot
+                </Link>
+                <Link
+                  href={`/shoots/${shoot.id}/expenses/new`}
+                  className="btn btn-primary"
+                >
+                  Add expense
+                </Link>
+              </>
+            ) : (
+              <Link href="/management" className="btn btn-secondary">
+                Reviews
+              </Link>
+            )}
           </div>
         </div>
 
@@ -188,14 +206,21 @@ export default async function ShootDetailPage({
 
         {expenses.length === 0 ? (
           <div className="panel-dashed p-8 text-center text-sm text-[var(--ink-muted)]">
-            No expenses match.{" "}
-            <Link
-              href={`/shoots/${shoot.id}/expenses/new`}
-              className="font-medium text-[var(--accent-ink)] underline"
-            >
-              Add one
-            </Link>
-            .
+            No expenses match
+            {!isMgmt ? (
+              <>
+                .{" "}
+                <Link
+                  href={`/shoots/${shoot.id}/expenses/new`}
+                  className="font-medium text-[var(--accent-ink)] underline"
+                >
+                  Add one
+                </Link>
+                .
+              </>
+            ) : (
+              "."
+            )}
           </div>
         ) : (
           <div className="data-table-wrap">
@@ -217,7 +242,11 @@ export default async function ShootDetailPage({
                   <tr key={expense.id}>
                     <td>
                       <Link
-                        href={`/shoots/${shoot.id}/expenses/${expense.id}`}
+                        href={
+                          isMgmt
+                            ? `/management/${expense.id}`
+                            : `/shoots/${shoot.id}/expenses/${expense.id}`
+                        }
                         className="font-medium text-[var(--ink)] hover:text-[var(--accent-ink)] hover:underline"
                       >
                         {expense.title}

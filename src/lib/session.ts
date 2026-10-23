@@ -24,6 +24,15 @@ export async function requireRole(role: Role) {
   return session;
 }
 
+/** Allow any of the listed roles (e.g. shoot detail for team + management). */
+export async function requireAnyRole(...roles: Role[]) {
+  const session = await requireSession();
+  if (!roles.includes(session.user.role as Role)) {
+    redirect(session.user.role === "MANAGEMENT" ? "/management" : "/shoots");
+  }
+  return session;
+}
+
 /**
  * Resolve the authenticated user from the DB by email.
  * JWT `id` can go stale after `db:setup` reseeds; email is the stable key.

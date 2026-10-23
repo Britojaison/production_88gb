@@ -14,15 +14,20 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
 
+  const status = url.searchParams.get("status") || "ALL";
+  const paid = url.searchParams.get("paid") || "UNPAID";
   const where = buildExpenseWhere({
     q: url.searchParams.get("q"),
-    status: url.searchParams.get("status") || "SUBMITTED",
+    status,
     categoryId: url.searchParams.get("categoryId"),
     paidTo: url.searchParams.get("paidTo"),
-    paid: url.searchParams.get("paid"),
+    paid,
     from: url.searchParams.get("from"),
     to: url.searchParams.get("to"),
   });
+  if (status === "ALL") {
+    where.status = { in: ["SUBMITTED", "APPROVED", "REJECTED"] };
+  }
 
   const expenses = await prisma.expense.findMany({
     where,

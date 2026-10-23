@@ -181,7 +181,17 @@
     margin-left: var(--sidebar-w);
     display: flex;
     flex-direction: column;
-    min-height: 100dvh;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* Default: page content scrolls under the top bar */
+  .app-main > *:not(.app-topbar) {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
   }
 
   .app-topbar {
@@ -265,19 +275,40 @@
     margin-inline: 0;
     margin-right: auto;
     flex: 1;
-    padding: 1.15rem 1rem 2.25rem 0.85rem;
+    min-height: 0;
+    padding: 1.15rem 1rem 1.15rem 0.85rem;
   }
 
   @media (min-width: 768px) {
     .page-shell-wide {
-      padding: 1.25rem 1.15rem 2.5rem 1rem;
+      padding: 1.25rem 1.15rem 1.25rem 1rem;
     }
+  }
+
+  /* /shoots: page body does not scroll — two independent panes do */
+  .shoots-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
+
+  .shoots-page .page-header {
+    flex-shrink: 0;
+    margin-bottom: 0.85rem;
   }
 
   .shoots-layout {
     display: grid;
     gap: 1.15rem;
-    align-items: start;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    /* Bound the single row so % max-heights / overflow panes resolve */
+    grid-template-rows: minmax(0, 1fr);
   }
 
   @media (min-width: 1100px) {
@@ -286,9 +317,59 @@
     }
   }
 
+  .shoots-scroll-pane {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 0.15rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .request-rail {
-    position: sticky;
-    top: 4.5rem;
+    position: relative;
+    top: auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .request-rail-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-top: 0.75rem;
+    padding-right: 0.15rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @media (max-width: 1099px) {
+    .shoots-layout {
+      grid-template-rows: none;
+      align-items: start;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .shoots-scroll-pane,
+    .request-rail {
+      height: auto;
+      max-height: min(70dvh, 36rem);
+    }
+
+    .request-rail {
+      overflow: hidden;
+    }
   }
 
   .request-stat {

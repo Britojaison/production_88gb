@@ -108,7 +108,7 @@ export default async function ShootsPage({
         ]
       : requestPool;
 
-  const recent: RequestRow[] = recentSource.slice(0, 8).map((e) => ({
+  const recent: RequestRow[] = recentSource.slice(0, 40).map((e) => ({
     id: e.id,
     title: e.title,
     amount: e.amount,
@@ -125,7 +125,7 @@ export default async function ShootsPage({
 
   return (
     <AppShell name={user.name} role={role}>
-      <main className="page-shell-wide page-enter">
+      <main className="page-shell-wide page-enter shoots-page">
         <div className="page-header">
           <div>
             <h1 className="page-title">Shoots</h1>
@@ -146,7 +146,7 @@ export default async function ShootsPage({
         </div>
 
         <div className="shoots-layout">
-          <div className="min-w-0">
+          <div className="shoots-scroll-pane">
             <form
               method="get"
               className="filter-bar !grid-cols-1 sm:!grid-cols-[1fr_auto_auto]"

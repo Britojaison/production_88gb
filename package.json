@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:import": "tsx scripts/import-master-csv.ts",
+    "db:sync-logos": "tsx scripts/sync-brand-logos.ts",
     "db:sync": "prisma db push && prisma generate",
     "db:setup": "prisma db push --force-reset && prisma generate && tsx prisma/seed.ts"
   },

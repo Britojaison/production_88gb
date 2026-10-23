@@ -43,6 +43,8 @@ model Shoot {
 model Brand {
   id        String       @id @default(cuid())
   name      String       @unique
+  /// Public path e.g. /client-logos/cinco.png
+  logoPath  String?
   shoots    ShootBrand[]
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt

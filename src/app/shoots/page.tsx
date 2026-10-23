@@ -213,11 +213,13 @@ export default async function ShootsPage({
                     key={shoot.id}
                     id={shoot.id}
                     name={shoot.name}
-                    brandNames={shoot.brands.map((sb) => sb.brand.name)}
+                    brands={shoot.brands.map((sb) => ({
+                      name: sb.brand.name,
+                      logoPath: sb.brand.logoPath,
+                    }))}
                     startDate={shoot.startDate}
                     endDate={shoot.endDate}
                     status={shoot.status}
-                    image={shoot.image}
                     expenseCount={shoot._count.expenses}
                     totalAmount={totalByShoot.get(shoot.id) ?? 0}
                     budget={shoot.budget}

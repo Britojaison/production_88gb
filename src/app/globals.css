@@ -673,19 +673,59 @@
     outline-offset: 2px;
   }
 
-  .shoot-card-image {
+  .shoot-card-logos {
     position: relative;
-    aspect-ratio: 16 / 10;
-    background: #121214;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 7.5rem;
+    padding: 1.25rem 1rem;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .shoot-card-logo-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    max-width: 100%;
+  }
+
+  .brand-logo-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    padding: 0.2rem;
+    border-radius: var(--radius-sm);
+    background: #0a0a0b;
+    border: 1px solid var(--border);
     overflow: hidden;
   }
 
-  .shoot-card-image::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgb(14 14 15 / 0.75), transparent 45%);
-    pointer-events: none;
+  .brand-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .brand-mark-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+    color: var(--ink-muted);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
   }
 
   .mobile-nav-toggle {

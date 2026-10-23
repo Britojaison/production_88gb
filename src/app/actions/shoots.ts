@@ -5,18 +5,9 @@ import { redirect } from "next/navigation";
 import { parseBrandFormFields, resolveBrandIds } from "@/lib/brands";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
-import {
-  RANDOM_SHOOT_IMAGE,
-  randomShootImage,
-} from "@/lib/shoot-images";
 import { shootFormSchema } from "@/lib/validations";
 
 function parseShootForm(formData: FormData) {
-  const image = formData.get("image");
-  const imageValue =
-    image && String(image).length > 0 && String(image) !== RANDOM_SHOOT_IMAGE
-      ? image
-      : undefined;
   const budgetRaw = formData.get("budget");
   return shootFormSchema.safeParse({
     name: formData.get("name"),
@@ -24,7 +15,6 @@ function parseShootForm(formData: FormData) {
     endDate: formData.get("endDate") || undefined,
     notes: formData.get("notes") || undefined,
     status: formData.get("status"),
-    image: imageValue,
     budget: budgetRaw == null || String(budgetRaw).trim() === "" ? "" : budgetRaw,
   });
 }
@@ -64,7 +54,7 @@ export async function createShoot(
       endDate: data.endDate ? new Date(data.endDate) : null,
       notes: data.notes?.trim() ? data.notes.trim() : null,
       status: data.status,
-      image: data.image ?? randomShootImage(),
+      image: null,
       budget: resolveBudget(data.budget),
     },
   });
@@ -93,7 +83,6 @@ export async function updateShoot(
   }
 
   const data = parsed.data;
-  const image = data.image ?? existing.image ?? randomShootImage();
 
   await prisma.shoot.update({
     where: { id },
@@ -103,7 +92,6 @@ export async function updateShoot(
       endDate: data.endDate ? new Date(data.endDate) : null,
       notes: data.notes?.trim() ? data.notes.trim() : null,
       status: data.status,
-      image,
       budget: resolveBudget(data.budget),
     },
   });

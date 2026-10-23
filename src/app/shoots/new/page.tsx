@@ -2,7 +2,6 @@ import { createShoot } from "@/app/actions/shoots";
 import { AppShell } from "@/components/AppShell";
 import { ShootForm } from "@/components/ShootForm";
 import { prisma } from "@/lib/prisma";
-import { RANDOM_SHOOT_IMAGE } from "@/lib/shoot-images";
 import { requireRole } from "@/lib/session";
 
 export const instant = false;
@@ -26,7 +25,6 @@ export default async function NewShootPage() {
             initial={{
               startDate: today,
               status: "PLANNED",
-              image: RANDOM_SHOOT_IMAGE,
               brandIds: [],
             }}
             submitLabel="Create shoot"

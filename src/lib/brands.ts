@@ -1,3 +1,4 @@
+import { logoPathForBrandName } from "@/lib/brand-logos";
 import { prisma } from "@/lib/prisma";
 
 export const SEED_BRANDS = [
@@ -15,14 +16,28 @@ export async function findOrCreateBrand(name: string): Promise<string> {
     throw new Error("Brand name is required");
   }
 
-  const all = await prisma.brand.findMany({ select: { id: true, name: true } });
+  const all = await prisma.brand.findMany({
+    select: { id: true, name: true, logoPath: true },
+  });
   const existing = all.find(
     (b) => b.name.toLowerCase() === trimmed.toLowerCase(),
   );
-  if (existing) return existing.id;
+  if (existing) {
+    const logoPath = logoPathForBrandName(existing.name);
+    if (logoPath && !existing.logoPath) {
+      await prisma.brand.update({
+        where: { id: existing.id },
+        data: { logoPath },
+      });
+    }
+    return existing.id;
+  }
 
   const created = await prisma.brand.create({
-    data: { name: trimmed },
+    data: {
+      name: trimmed,
+      logoPath: logoPathForBrandName(trimmed),
+    },
   });
   return created.id;
 }

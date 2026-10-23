@@ -12,7 +12,7 @@ import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { EXPENSE_CATEGORIES } from "../src/lib/categories";
 import { SEED_BRANDS } from "../src/lib/brands";
-import { randomShootImage } from "../src/lib/shoot-images";
+import { logoPathForBrandName } from "../src/lib/brand-logos";
 
 const prisma = new PrismaClient();
 
@@ -363,7 +363,10 @@ export async function importMasterCsv(opts?: {
 
   // Seed brands first so aliases resolve to exact names
   await prisma.brand.createMany({
-    data: SEED_BRANDS.map((name) => ({ name })),
+    data: SEED_BRANDS.map((name) => ({
+      name,
+      logoPath: logoPathForBrandName(name),
+    })),
   });
 
   type NormRow = {
@@ -461,9 +464,21 @@ export async function importMasterCsv(opts?: {
   let brandsCreated = 0;
   for (const name of brandNames) {
     if (!existingLower.has(name.toLowerCase())) {
-      await prisma.brand.create({ data: { name } });
+      await prisma.brand.create({
+        data: { name, logoPath: logoPathForBrandName(name) },
+      });
       brandsCreated++;
       existingLower.add(name.toLowerCase());
+    }
+  }
+  // Ensure known client logos are attached even when brands pre-existed
+  for (const b of await prisma.brand.findMany()) {
+    const logoPath = logoPathForBrandName(b.name);
+    if (logoPath && b.logoPath !== logoPath) {
+      await prisma.brand.update({
+        where: { id: b.id },
+        data: { logoPath },
+      });
     }
   }
   const allBrands = await prisma.brand.findMany();
@@ -506,7 +521,7 @@ export async function importMasterCsv(opts?: {
         endDate: endDate.getTime() === startDate.getTime() ? null : endDate,
         notes: `Imported from master CSV (${items.length} expense line${items.length === 1 ? "" : "s"}).`,
         status: allPaid ? "WRAPPED" : "ACTIVE",
-        image: randomShootImage(),
+        image: null,
         budget: null,
       },
     });

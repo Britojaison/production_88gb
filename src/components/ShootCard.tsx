@@ -1,64 +1,97 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ShootStatusBadge } from "@/components/StatusBadge";
+import { brandMonogram } from "@/lib/brand-logos";
 import { formatCurrency, formatDateRange } from "@/lib/format";
-import { shootImageSrc } from "@/lib/shoot-images";
 import type { ShootStatus } from "@/lib/types";
+
+export type ShootCardBrand = {
+  name: string;
+  logoPath: string | null;
+};
 
 export function ShootCard({
   id,
   name,
-  brandNames,
+  brands,
   startDate,
   endDate,
   status,
-  image,
   expenseCount,
   totalAmount,
   budget,
 }: {
   id: string;
   name: string;
-  brandNames: string[];
+  brands: ShootCardBrand[];
   startDate: Date;
   endDate: Date | null;
   status: string;
-  image: string | null;
   expenseCount: number;
   totalAmount: number;
   budget: number | null;
 }) {
-  const src = shootImageSrc(image, id);
   const remaining = budget != null ? budget - totalAmount : null;
+  const shown = brands.slice(0, 4);
+  const extra = brands.length - shown.length;
 
   return (
     <Link href={`/shoots/${id}`} className="shoot-card group">
-      <div className="shoot-card-image">
-        <Image
-          src={src}
-          alt=""
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover opacity-90"
-        />
+      <div className="shoot-card-logos">
         <div className="absolute right-3 top-3 z-10">
           <ShootStatusBadge status={status as ShootStatus} />
         </div>
+        {shown.length === 0 ? (
+          <div className="brand-mark-fallback" aria-hidden>
+            —
+          </div>
+        ) : (
+          <div className="shoot-card-logo-row">
+            {shown.map((brand) =>
+              brand.logoPath ? (
+                <span key={brand.name} className="brand-logo-tile" title={brand.name}>
+                  <Image
+                    src={brand.logoPath}
+                    alt={brand.name}
+                    width={96}
+                    height={96}
+                    sizes="48px"
+                    className="brand-logo-img"
+                  />
+                </span>
+              ) : (
+                <span
+                  key={brand.name}
+                  className="brand-mark-fallback"
+                  title={brand.name}
+                  aria-label={brand.name}
+                >
+                  {brandMonogram(brand.name)}
+                </span>
+              ),
+            )}
+            {extra > 0 ? (
+              <span className="brand-mark-fallback" title={`${extra} more`}>
+                +{extra}
+              </span>
+            ) : null}
+          </div>
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-2.5 p-4">
         <div className="min-w-0">
           <h2 className="line-clamp-2 text-[1rem] font-semibold leading-snug tracking-tight text-[var(--ink)]">
             {name}
           </h2>
-          {brandNames.length > 0 ? (
+          {brands.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-1">
-              {brandNames.slice(0, 3).map((b) => (
-                <span key={b} className="brand-chip truncate">
-                  {b}
+              {brands.slice(0, 3).map((b) => (
+                <span key={b.name} className="brand-chip truncate">
+                  {b.name}
                 </span>
               ))}
-              {brandNames.length > 3 ? (
-                <span className="brand-chip">+{brandNames.length - 3}</span>
+              {brands.length > 3 ? (
+                <span className="brand-chip">+{brands.length - 3}</span>
               ) : null}
             </div>
           ) : null}

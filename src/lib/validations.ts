@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { SHOOT_IMAGE_OPTIONS } from "@/lib/shoot-images";
 import { EXPENSE_STATUSES, ROLES, SHOOT_STATUSES } from "@/lib/types";
 
 export const expenseFormSchema = z.object({
@@ -23,7 +22,6 @@ export const shootFormSchema = z
     endDate: z.string().optional(),
     notes: z.string().trim().max(2000).optional(),
     status: z.enum(SHOOT_STATUSES),
-    image: z.enum(SHOOT_IMAGE_OPTIONS).optional(),
     budget: z.union([z.literal(""), z.coerce.number().nonnegative()]).optional(),
   })
   .superRefine((data, ctx) => {

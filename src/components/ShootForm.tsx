@@ -2,10 +2,6 @@
 
 import { useState } from "react";
 import { shootStatusLabel } from "@/lib/format";
-import {
-  RANDOM_SHOOT_IMAGE,
-  SHOOT_IMAGE_OPTIONS,
-} from "@/lib/shoot-images";
 import { SHOOT_STATUSES, type ShootStatus } from "@/lib/types";
 
 type ShootFormValues = {
@@ -14,7 +10,6 @@ type ShootFormValues = {
   endDate: string;
   notes: string;
   status: ShootStatus;
-  image: string;
   budget: string;
   brandIds: string[];
 };
@@ -170,39 +165,20 @@ export function ShootForm({
           </select>
         </div>
         <div>
-          <label htmlFor="image" className="field-label">
-            Card image
+          <label htmlFor="budget" className="field-label">
+            Budget INR (optional)
           </label>
-          <select
-            id="image"
-            name="image"
-            defaultValue={initial?.image ?? RANDOM_SHOOT_IMAGE}
-            className="field-input"
-          >
-            <option value={RANDOM_SHOOT_IMAGE}>Random from pool</option>
-            {SHOOT_IMAGE_OPTIONS.map((path) => (
-              <option key={path} value={path}>
-                {path.replace("/images/", "")}
-              </option>
-            ))}
-          </select>
+          <input
+            id="budget"
+            name="budget"
+            type="number"
+            min="0"
+            step="0.01"
+            defaultValue={initial?.budget ?? ""}
+            className="field-input amount"
+            placeholder="50000"
+          />
         </div>
-      </div>
-
-      <div>
-        <label htmlFor="budget" className="field-label">
-          Budget INR (optional)
-        </label>
-        <input
-          id="budget"
-          name="budget"
-          type="number"
-          min="0"
-          step="0.01"
-          defaultValue={initial?.budget ?? ""}
-          className="field-input amount"
-          placeholder="50000"
-        />
       </div>
 
       <div>

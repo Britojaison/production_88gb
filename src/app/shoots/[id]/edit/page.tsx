@@ -5,7 +5,6 @@ import { AppShell } from "@/components/AppShell";
 import { ShootForm } from "@/components/ShootForm";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
-import { RANDOM_SHOOT_IMAGE } from "@/lib/shoot-images";
 import type { ShootStatus } from "@/lib/types";
 
 export const instant = false;
@@ -53,7 +52,6 @@ export default async function EditShootPage({
                 : "",
               notes: shoot.notes ?? "",
               status: shoot.status as ShootStatus,
-              image: shoot.image ?? RANDOM_SHOOT_IMAGE,
               budget: shoot.budget != null ? String(shoot.budget) : "",
               brandIds: shoot.brands.map((sb) => sb.brandId),
             }}

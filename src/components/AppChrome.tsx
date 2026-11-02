@@ -7,6 +7,7 @@ import { useState, type ReactNode } from "react";
 import { signOut } from "next-auth/react";
 import {
   IconBell,
+  IconClose,
   IconHome,
   IconLayers,
   IconList,
@@ -151,16 +152,36 @@ export function AppChrome({
       />
 
       <aside className="app-sidebar" aria-label="Main navigation">
-        <Link href={home} className="app-sidebar-logo" title="88GB Expenses">
-          <Image
-            src="/88gb-logo.png"
-            alt="88GB"
-            width={198}
-            height={156}
-            sizes="40px"
-            priority
-          />
-        </Link>
+        <div className="sidebar-header-row">
+          <Link
+            href={home}
+            className="app-sidebar-logo"
+            title="88GB Expenses"
+            onClick={() => setOpen(false)}
+          >
+            <Image
+              src="/88gb-logo.png"
+              alt="88GB"
+              width={198}
+              height={156}
+              sizes="40px"
+              priority
+            />
+          </Link>
+          <div className="sidebar-brand-text">
+            <span className="font-semibold text-[var(--ink)]">88GB</span>
+            <span className="text-xs text-[var(--ink-muted)]">Slate Expenses</span>
+          </div>
+          <button
+            type="button"
+            className="sidebar-close-btn"
+            onClick={() => setOpen(false)}
+            aria-label="Close menu"
+          >
+            <IconClose />
+          </button>
+        </div>
+
         <nav className="sidebar-nav">
           {items.map((item) => {
             const active = item.match(pathname);
@@ -179,11 +200,36 @@ export function AppChrome({
                 aria-current={active ? "page" : undefined}
                 onClick={() => setOpen(false)}
               >
-                {item.icon}
+                <span className="sidebar-link-icon">{item.icon}</span>
+                <span className="sidebar-link-text">{item.label}</span>
+                {item.href === "/notifications" && unread > 0 ? (
+                  <span className="sidebar-link-badge">{unread}</span>
+                ) : null}
               </Link>
             );
           })}
         </nav>
+
+        <div className="sidebar-mobile-footer">
+          <div className="flex items-center gap-3">
+            <div className="avatar" aria-hidden>
+              {initials(name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-[var(--ink)]">{name}</p>
+              <p className="truncate text-xs text-[var(--ink-faint)]">
+                {email ?? (role === "MANAGEMENT" ? "management" : "video team")}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="btn btn-secondary mt-3 w-full justify-center !py-2 text-xs"
+          >
+            Sign out
+          </button>
+        </div>
       </aside>
 
       <div className="app-main">
@@ -234,7 +280,7 @@ export function AppChrome({
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="btn btn-secondary !px-3 !py-1.5 text-xs"
+              className="btn btn-secondary hidden !px-3 !py-1.5 text-xs sm:inline-flex"
             >
               Sign out
             </button>

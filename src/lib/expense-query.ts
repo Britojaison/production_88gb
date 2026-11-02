@@ -19,7 +19,7 @@ export function buildExpenseWhere(opts: {
   if (opts.status && opts.status !== "ALL") where.status = opts.status;
   if (opts.categoryId) where.categoryId = opts.categoryId;
   if (opts.paidTo?.trim()) {
-    where.paidTo = { contains: opts.paidTo.trim() };
+    where.paidTo = { contains: opts.paidTo.trim(), mode: "insensitive" };
   }
   if (opts.paid === "PAID") where.paid = true;
   if (opts.paid === "UNPAID") where.paid = false;
@@ -31,9 +31,9 @@ export function buildExpenseWhere(opts: {
   if (opts.q?.trim()) {
     const q = opts.q.trim();
     where.OR = [
-      { title: { contains: q } },
-      { paidTo: { contains: q } },
-      { shoot: { name: { contains: q } } },
+      { title: { contains: q, mode: "insensitive" } },
+      { paidTo: { contains: q, mode: "insensitive" } },
+      { shoot: { name: { contains: q, mode: "insensitive" } } },
     ];
   }
 

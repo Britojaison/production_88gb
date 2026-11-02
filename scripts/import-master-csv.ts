@@ -398,7 +398,7 @@ export async function importMasterCsv(opts?: {
       skipped.push({ line: r.line, reason: "missing Vendor / Payee Name" });
       continue;
     }
-    let date = parseDate(r.dateOfWork);
+    const date = parseDate(r.dateOfWork);
     if (!date) {
       skipped.push({
         line: r.line,

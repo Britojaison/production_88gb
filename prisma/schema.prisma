@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -20,6 +21,8 @@ model User {
   auditEvents   AuditEvent[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  @@map("users_slate")
 }
 
 model Shoot {
@@ -38,6 +41,8 @@ model Shoot {
   brands    ShootBrand[]
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+
+  @@map("shoots_slate")
 }
 
 model Brand {
@@ -48,6 +53,8 @@ model Brand {
   shoots    ShootBrand[]
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+
+  @@map("brands_slate")
 }
 
 model ShootBrand {
@@ -57,6 +64,7 @@ model ShootBrand {
   brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@id([shootId, brandId])
+  @@map("shoot_brands_slate")
 }
 
 model Category {
@@ -66,6 +74,8 @@ model Category {
   sortOrder Int       @default(0)
   expenses  Expense[]
   createdAt DateTime  @default(now())
+
+  @@map("categories_slate")
 }
 
 model Vendor {
@@ -75,6 +85,8 @@ model Vendor {
   expenses       Expense[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  @@map("vendors_slate")
 }
 
 model Expense {
@@ -109,6 +121,8 @@ model Expense {
   auditEvents          AuditEvent[]
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
+
+  @@map("expenses_slate")
 }
 
 model Notification {
@@ -123,6 +137,8 @@ model Notification {
   expenseId String?
   expense   Expense? @relation(fields: [expenseId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
+
+  @@map("notifications_slate")
 }
 
 model AuditEvent {
@@ -136,4 +152,6 @@ model AuditEvent {
   toStatus   String?
   note      String?
   createdAt DateTime @default(now())
+
+  @@map("audit_events_slate")
 }

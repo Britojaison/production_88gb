@@ -5,6 +5,7 @@ import {
   type RequestRow,
 } from "@/components/RequestStatusRail";
 import { ShootCard } from "@/components/ShootCard";
+import { ShootsResponsiveLayout } from "@/components/ShootsResponsiveLayout";
 import { prisma } from "@/lib/prisma";
 import { requireDbUser } from "@/lib/session";
 import type { Role } from "@/lib/types";
@@ -44,9 +45,9 @@ export default async function ShootsPage({
           ...(q
             ? {
                 OR: [
-                  { name: { contains: q } },
-                  { notes: { contains: q } },
-                  { brands: { some: { brand: { name: { contains: q } } } } },
+                  { name: { contains: q, mode: "insensitive" } },
+                  { notes: { contains: q, mode: "insensitive" } },
+                  { brands: { some: { brand: { name: { contains: q, mode: "insensitive" } } } } },
                 ],
               }
             : {}),
@@ -145,92 +146,97 @@ export default async function ShootsPage({
           )}
         </div>
 
-        <div className="shoots-layout">
-          <div className="shoots-scroll-pane">
-            <form
-              method="get"
-              className="filter-bar !grid-cols-1 sm:!grid-cols-[1fr_auto_auto]"
-            >
-              <div>
-                <label className="field-label" htmlFor="shoots-q">
-                  Search
-                </label>
-                <input
-                  id="shoots-q"
-                  name="q"
-                  defaultValue={q}
-                  placeholder="Name, notes, or brand…"
-                  className="field-input"
-                />
-              </div>
-              <div>
-                <label className="field-label" htmlFor="shoots-status">
-                  Status
-                </label>
-                <select
-                  id="shoots-status"
-                  name="status"
-                  defaultValue={params.status ?? "ALL"}
-                  className="field-input"
-                >
-                  <option value="ALL">All statuses</option>
-                  {SHOOT_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  className="btn btn-primary w-full sm:w-auto"
-                >
-                  Filter
-                </button>
-              </div>
-            </form>
-
-            {shoots.length === 0 ? (
-              <div className="panel-dashed p-8 text-center text-sm text-[var(--ink-muted)]">
-                No shoots match.{" "}
-                {role === "VIDEO_TEAM" ? (
-                  <>
-                    <Link
-                      href="/shoots/new"
-                      className="font-medium text-[var(--accent-ink)] underline"
-                    >
-                      Create a shoot
-                    </Link>
-                    .
-                  </>
-                ) : null}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {shoots.map((shoot) => (
-                  <ShootCard
-                    key={shoot.id}
-                    id={shoot.id}
-                    name={shoot.name}
-                    brands={shoot.brands.map((sb) => ({
-                      name: sb.brand.name,
-                      logoPath: sb.brand.logoPath,
-                    }))}
-                    startDate={shoot.startDate}
-                    endDate={shoot.endDate}
-                    status={shoot.status}
-                    expenseCount={shoot._count.expenses}
-                    totalAmount={totalByShoot.get(shoot.id) ?? 0}
-                    budget={shoot.budget}
+        <ShootsResponsiveLayout
+          shootsCount={shoots.length}
+          pendingCount={submittedN}
+          shootsContent={
+            <>
+              <form
+                method="get"
+                className="filter-bar !grid-cols-1 sm:!grid-cols-[1fr_auto_auto]"
+              >
+                <div>
+                  <label className="field-label" htmlFor="shoots-q">
+                    Search
+                  </label>
+                  <input
+                    id="shoots-q"
+                    name="q"
+                    defaultValue={q}
+                    placeholder="Name, notes, or brand…"
+                    className="field-input"
                   />
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+                <div>
+                  <label className="field-label" htmlFor="shoots-status">
+                    Status
+                  </label>
+                  <select
+                    id="shoots-status"
+                    name="status"
+                    defaultValue={params.status ?? "ALL"}
+                    className="field-input"
+                  >
+                    <option value="ALL">All statuses</option>
+                    {SHOOT_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="btn btn-primary w-full sm:w-auto"
+                  >
+                    Filter
+                  </button>
+                </div>
+              </form>
 
-          <RequestStatusRail role={role} counts={counts} recent={recent} />
-        </div>
+              {shoots.length === 0 ? (
+                <div className="panel-dashed p-8 text-center text-sm text-[var(--ink-muted)]">
+                  No shoots match.{" "}
+                  {role === "VIDEO_TEAM" ? (
+                    <>
+                      <Link
+                        href="/shoots/new"
+                        className="font-medium text-[var(--accent-ink)] underline"
+                      >
+                        Create a shoot
+                      </Link>
+                      .
+                    </>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {shoots.map((shoot) => (
+                    <ShootCard
+                      key={shoot.id}
+                      id={shoot.id}
+                      name={shoot.name}
+                      brands={shoot.brands.map((sb) => ({
+                        name: sb.brand.name,
+                        logoPath: sb.brand.logoPath,
+                      }))}
+                      startDate={shoot.startDate}
+                      endDate={shoot.endDate}
+                      status={shoot.status}
+                      expenseCount={shoot._count.expenses}
+                      totalAmount={totalByShoot.get(shoot.id) ?? 0}
+                      budget={shoot.budget}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          }
+          railContent={
+            <RequestStatusRail role={role} counts={counts} recent={recent} />
+          }
+        />
       </main>
     </AppShell>
   );

@@ -61,7 +61,7 @@ export default async function ManagementPage({
 
   return (
     <AppShell name={session.user.name} role={session.user.role}>
-      <main className="page-shell page-enter">
+      <main className="page-shell-wide page-enter">
         <div className="page-header">
           <div>
             <h1 className="page-title">Expense reviews</h1>

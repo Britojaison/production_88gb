@@ -102,7 +102,7 @@ model Expense {
   category             Category?      @relation(fields: [categoryId], references: [id])
   vendorId             String?
   vendor               Vendor?        @relation(fields: [vendorId], references: [id])
-  /// Relative path under public/uploads, e.g. uploads/abc.pdf
+  /// Storage key. "uploads/<file>" = local disk (dev), "supabase:<file>" = Supabase Storage bucket
   receiptPath          String?
   receiptName          String?
   /// DRAFT | SUBMITTED | APPROVED | REJECTED
@@ -111,6 +111,14 @@ model Expense {
   /// Settlement flag (distinct from paidTo / payee)
   paid                 Boolean        @default(false)
   paidAt               DateTime?
+  /// Payment terms (structured; previously free text in vendorPaymentDetails)
+  /// LOW | MEDIUM | HIGH
+  priority             String?
+  dueDate              DateTime?
+  /// Advance already paid against `amount` (INR). Outstanding = amount - advancePaid when unpaid.
+  advancePaid          Float?
+  invoiceUrl           String?
+  remarks              String?
   submitterId          String
   submitter            User           @relation("SubmitterExpenses", fields: [submitterId], references: [id])
   submittedAt          DateTime?
@@ -122,6 +130,9 @@ model Expense {
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 
+  @@index([status, paid])
+  @@index([dueDate])
+  @@index([shootId])
   @@map("expenses_slate")
 }
 

@@ -127,3 +127,16 @@ export function IconClose({ className }: { className?: string }) {
   );
 }
 
+
+export function IconChart({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 20h16M7 16v-5M12 16V6M17 16v-8"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

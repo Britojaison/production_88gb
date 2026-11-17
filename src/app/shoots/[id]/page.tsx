@@ -6,10 +6,11 @@ import { PaidBadge, ShootStatusBadge, StatusBadge } from "@/components/StatusBad
 import { getCachedCategories, getCachedShootDetail } from "@/lib/data-cache";
 import { buildExpenseWhere } from "@/lib/expense-query";
 import { formatCurrency, formatDate, formatDateRange } from "@/lib/format";
+import { isCommitted } from "@/lib/payment-terms";
 import { prisma } from "@/lib/prisma";
 import { requireAnyRole } from "@/lib/session";
 import type { ExpenseStatus, ShootStatus } from "@/lib/types";
-import { publicUploadUrl } from "@/lib/uploads";
+import { receiptHref } from "@/lib/uploads";
 
 export const instant = false;
 
@@ -72,10 +73,15 @@ export default async function ShootDetailPage({
   if (!shoot) notFound();
   const brandNames = shoot.brands.map((sb) => sb.brand.name);
 
+  // Spend counts submitted + approved only; drafts/rejections are shown separately.
   const allForTotals = totalsData ?? expenses;
-  const spent = allForTotals.reduce((s, e) => s + e.amount, 0);
+  const committed = allForTotals.filter((e) => isCommitted(e.status));
+  const spent = committed.reduce((s, e) => s + e.amount, 0);
+  const draftTotal = allForTotals
+    .filter((e) => e.status === "DRAFT")
+    .reduce((s, e) => s + e.amount, 0);
   const byCategory = new Map<string, number>();
-  for (const e of allForTotals) {
+  for (const e of committed) {
     const key = e.category?.name ?? "Uncategorized";
     byCategory.set(key, (byCategory.get(key) ?? 0) + e.amount);
   }
@@ -123,6 +129,11 @@ export default async function ShootDetailPage({
                   Spent
                 </p>
                 <p className="amount-lg mt-1">{formatCurrency(spent)}</p>
+                {draftTotal > 0 ? (
+                  <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
+                    + {formatCurrency(draftTotal)} in drafts
+                  </p>
+                ) : null}
               </div>
               {shoot.budget != null ? (
                 <>
@@ -277,7 +288,7 @@ export default async function ShootDetailPage({
                     <td className="text-[var(--ink-muted)]">
                       {expense.receiptPath ? (
                         <a
-                          href={publicUploadUrl(expense.receiptPath)}
+                          href={receiptHref(expense.id)}
                           className="text-[var(--accent-ink)] underline"
                           target="_blank"
                           rel="noreferrer"

@@ -11,7 +11,7 @@ export default async function HomePage() {
   }
 
   if (session.user.role === "MANAGEMENT") {
-    redirect("/management");
+    redirect("/dashboard");
   }
 
   redirect("/shoots");

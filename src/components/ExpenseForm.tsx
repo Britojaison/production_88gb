@@ -13,6 +13,11 @@ type ExpenseFormValues = {
   vendorPaymentDetails: string;
   categoryId: string;
   vendorId: string;
+  priority: string;
+  dueDate: string;
+  advancePaid: string;
+  invoiceUrl: string;
+  remarks: string;
 };
 
 export function ExpenseForm({
@@ -194,6 +199,81 @@ export function ExpenseForm({
           className="field-input"
         />
       </div>
+
+      <fieldset className="space-y-4 rounded-md border border-[var(--border)] p-4">
+        <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
+          Payment terms (optional)
+        </legend>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label htmlFor="dueDate" className="field-label">
+              Due date
+            </label>
+            <input
+              id="dueDate"
+              name="dueDate"
+              type="date"
+              defaultValue={initial?.dueDate ?? ""}
+              className="field-input"
+            />
+          </div>
+          <div>
+            <label htmlFor="priority" className="field-label">
+              Priority
+            </label>
+            <select
+              id="priority"
+              name="priority"
+              defaultValue={initial?.priority ?? ""}
+              className="field-input"
+            >
+              <option value="">Not set</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="advancePaid" className="field-label">
+              Advance paid (INR)
+            </label>
+            <input
+              id="advancePaid"
+              name="advancePaid"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue={initial?.advancePaid ?? ""}
+              className="field-input amount"
+            />
+          </div>
+        </div>
+        <div>
+          <label htmlFor="invoiceUrl" className="field-label">
+            Invoice link
+          </label>
+          <input
+            id="invoiceUrl"
+            name="invoiceUrl"
+            type="url"
+            placeholder="https://drive.google.com/…"
+            defaultValue={initial?.invoiceUrl ?? ""}
+            className="field-input"
+          />
+        </div>
+        <div>
+          <label htmlFor="remarks" className="field-label">
+            Remarks
+          </label>
+          <textarea
+            id="remarks"
+            name="remarks"
+            rows={2}
+            defaultValue={initial?.remarks ?? ""}
+            className="field-input"
+          />
+        </div>
+      </fieldset>
 
       <div>
         <label htmlFor="receipt" className="field-label">

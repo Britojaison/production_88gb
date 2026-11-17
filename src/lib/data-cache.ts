@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { COMMITTED_STATUSES } from "@/lib/payment-terms";
 import { prisma } from "@/lib/prisma";
 
 // ============================================================
@@ -173,7 +174,9 @@ export async function getCachedShoots(options?: {
           include: { brand: true },
           orderBy: { brand: { name: "asc" } },
         },
+        // Spend = submitted + approved only (drafts and rejections don't count)
         expenses: {
+          where: { status: { in: [...COMMITTED_STATUSES] } },
           select: { amount: true },
         },
       },

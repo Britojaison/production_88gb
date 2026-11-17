@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { toCsv } from "@/lib/csv";
+import { outstandingAmount } from "@/lib/payment-terms";
 import { buildExpenseWhere } from "@/lib/expense-query";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
@@ -55,6 +56,11 @@ export async function GET(
       "Status",
       "Paid",
       "Paid At",
+      "Advance Paid",
+      "Outstanding",
+      "Due Date",
+      "Priority",
+      "Invoice Link",
       "Payment Details",
       "Shoot",
     ],
@@ -67,6 +73,11 @@ export async function GET(
       e.status,
       e.paid ? "Yes" : "No",
       e.paidAt?.toISOString() ?? "",
+      e.advancePaid ?? "",
+      outstandingAmount(e),
+      e.dueDate?.toISOString().slice(0, 10) ?? "",
+      e.priority ?? "",
+      e.invoiceUrl ?? "",
       e.vendorPaymentDetails,
       e.shoot.name,
     ]),

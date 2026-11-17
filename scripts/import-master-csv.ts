@@ -13,6 +13,11 @@ import { hash } from "bcryptjs";
 import { EXPENSE_CATEGORIES } from "../src/lib/categories";
 import { SEED_BRANDS } from "../src/lib/brands";
 import { logoPathForBrandName } from "../src/lib/brand-logos";
+import {
+  normalizePriority,
+  parseLooseDate,
+  parseMoney,
+} from "../src/lib/payment-terms";
 
 const prisma = new PrismaClient();
 
@@ -258,7 +263,7 @@ export async function importMasterCsv(opts?: {
     "Invoice Value → amount (commas stripped).",
     "Payment Status Done → APPROVED + paid=true; Not Done → APPROVED + paid=false (work accepted, settlement pending).",
     "Payment Date → paidAt when present and status Done.",
-    "Account + Invoice Link + Remarks → vendorPaymentDetails.",
+    "Priority, Due Date, Advance, Invoice Link (URLs), Remarks → structured expense columns; Account → vendorPaymentDetails.",
     "Date of Work: first date if multi; month names → 1st of month 2025 UTC.",
     "Demo sample shoots/expenses replaced; login users preserved when keepUsers.",
   ];
@@ -381,6 +386,11 @@ export async function importMasterCsv(opts?: {
     paidAt: Date | null;
     status: string;
     paymentDetails: string;
+    priority: string | null;
+    dueDate: Date | null;
+    advancePaid: number | null;
+    invoiceUrl: string | null;
+    remarks: string | null;
     title: string;
     notesBits: string[];
   };
@@ -426,15 +436,15 @@ export async function importMasterCsv(opts?: {
       paidAt = parseDate(r.paymentDate) ?? date;
     }
 
-    const detailParts = [
-      r.account ? `Account: ${r.account}` : "",
-      r.invoiceLink ? `Invoice: ${r.invoiceLink}` : "",
-      r.remarks ? `Remarks: ${r.remarks}` : "",
-      r.advance ? `Advance: ${r.advance}` : "",
-      r.balance ? `Balance: ${r.balance}` : "",
-      r.dueDate ? `Due: ${r.dueDate}` : "",
-      r.priority ? `Priority: ${r.priority}` : "",
-    ].filter(Boolean);
+    // Account stays in free-text payment details; the rest is structured.
+    const detailParts = [r.account ? `Account: ${r.account}` : ""].filter(Boolean);
+    const invoiceUrl = /^https?:\/\//i.test(r.invoiceLink.trim())
+      ? r.invoiceLink.trim()
+      : null;
+    const nonUrlInvoiceNote =
+      r.invoiceLink.trim() && !invoiceUrl ? `Invoice: ${r.invoiceLink.trim()}` : "";
+    const remarks =
+      [r.remarks.trim(), nonUrlInvoiceNote].filter(Boolean).join("\n") || null;
 
     normalized.push({
       line: r.line,
@@ -449,6 +459,11 @@ export async function importMasterCsv(opts?: {
       status: "APPROVED",
       paymentDetails:
         detailParts.join("\n") || "Imported from master payment approvals CSV",
+      priority: normalizePriority(r.priority),
+      dueDate: parseLooseDate(r.dueDate),
+      advancePaid: parseMoney(r.advance),
+      invoiceUrl,
+      remarks,
       title: `${payee} — ${category.name}`,
       notesBits: [],
     });
@@ -556,6 +571,11 @@ export async function importMasterCsv(opts?: {
           status: item.status,
           paid: item.paid,
           paidAt: item.paidAt,
+          priority: item.priority,
+          dueDate: item.dueDate,
+          advancePaid: item.advancePaid,
+          invoiceUrl: item.invoiceUrl,
+          remarks: item.remarks,
           submitterId: teamId,
           submittedAt: item.date,
           reviewedAt: item.date,

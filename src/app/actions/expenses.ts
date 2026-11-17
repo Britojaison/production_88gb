@@ -22,7 +22,30 @@ function parseExpenseForm(formData: FormData) {
     vendorPaymentDetails: formData.get("vendorPaymentDetails"),
     categoryId: formData.get("categoryId"),
     vendorId: vendorId || undefined,
+    priority: formData.get("priority") ?? "",
+    dueDate: formData.get("dueDate") ?? "",
+    advancePaid: formData.get("advancePaid") ?? "",
+    invoiceUrl: formData.get("invoiceUrl") ?? "",
+    remarks: formData.get("remarks") ?? "",
   });
+}
+
+function termsData(data: {
+  amount: number;
+  priority?: string;
+  dueDate?: string;
+  advancePaid?: number | "";
+  invoiceUrl?: string;
+  remarks?: string;
+}) {
+  const advance = typeof data.advancePaid === "number" ? data.advancePaid : null;
+  return {
+    priority: data.priority || null,
+    dueDate: data.dueDate ? new Date(data.dueDate) : null,
+    advancePaid: advance,
+    invoiceUrl: data.invoiceUrl || null,
+    remarks: data.remarks || null,
+  };
 }
 
 function revalidateShootPaths(shootId: string, expenseId?: string) {
@@ -115,6 +138,7 @@ export async function createExpense(
       vendorId,
       receiptPath: receipt.receiptPath,
       receiptName: receipt.receiptName,
+      ...termsData(data),
       status: ExpenseStatus.DRAFT,
       submitterId: user.id,
     },
@@ -183,6 +207,7 @@ export async function updateExpense(
       vendorId,
       receiptPath: receipt.receiptPath,
       receiptName: receipt.receiptName,
+      ...termsData(data),
       status: ExpenseStatus.DRAFT,
       rejectionReason: null,
       submittedAt: null,

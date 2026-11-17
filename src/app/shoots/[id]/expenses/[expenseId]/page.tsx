@@ -7,12 +7,13 @@ import {
 } from "@/app/actions/expenses";
 import { AppShell } from "@/components/AppShell";
 import { ExpenseForm } from "@/components/ExpenseForm";
+import { PaymentTermsList } from "@/components/PaymentTermsList";
 import { PaidBadge, StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import type { ExpenseStatus } from "@/lib/types";
-import { publicUploadUrl } from "@/lib/uploads";
+import { receiptHref } from "@/lib/uploads";
 
 export const instant = false;
 
@@ -110,7 +111,7 @@ export default async function ShootExpenseDetailPage({
           <div className="panel mb-4 px-3.5 py-2.5 text-sm">
             Receipt:{" "}
             <a
-              href={publicUploadUrl(expense.receiptPath)}
+              href={receiptHref(expense.id)}
               className="font-medium text-[var(--accent-ink)] underline"
               target="_blank"
               rel="noreferrer"
@@ -137,6 +138,14 @@ export default async function ShootExpenseDetailPage({
                   vendorPaymentDetails: expense.vendorPaymentDetails,
                   categoryId: expense.categoryId ?? categories[0]?.id,
                   vendorId: expense.vendorId ?? "",
+                  priority: expense.priority ?? "",
+                  dueDate: expense.dueDate
+                    ? expense.dueDate.toISOString().slice(0, 10)
+                    : "",
+                  advancePaid:
+                    expense.advancePaid != null ? String(expense.advancePaid) : "",
+                  invoiceUrl: expense.invoiceUrl ?? "",
+                  remarks: expense.remarks ?? "",
                 }}
               />
             </div>
@@ -174,6 +183,7 @@ export default async function ShootExpenseDetailPage({
                   {expense.vendorPaymentDetails}
                 </dd>
               </div>
+              <PaymentTermsList expense={expense} now={new Date()} />
             </dl>
           </div>
         )}

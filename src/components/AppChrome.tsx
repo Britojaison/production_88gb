@@ -7,6 +7,7 @@ import { useState, type ReactNode } from "react";
 import { signOut } from "next-auth/react";
 import {
   IconBell,
+  IconChart,
   IconClose,
   IconHome,
   IconLayers,
@@ -65,6 +66,12 @@ function teamNav(): NavItem[] {
 
 function mgmtNav(): NavItem[] {
   return [
+    {
+      href: "/dashboard",
+      label: "Dashboard",
+      icon: <IconChart />,
+      match: (p) => p.startsWith("/dashboard"),
+    },
     {
       href: "/shoots",
       label: "Shoots",
@@ -138,7 +145,7 @@ export function AppChrome({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const home = role === "MANAGEMENT" ? "/management" : "/shoots";
+  const home = role === "MANAGEMENT" ? "/dashboard" : "/shoots";
   const searchAction = role === "MANAGEMENT" ? "/management" : "/shoots";
   const items = role === "MANAGEMENT" ? mgmtNav() : teamNav();
 

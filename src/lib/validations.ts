@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PRIORITIES } from "@/lib/payment-terms";
 import { EXPENSE_STATUSES, ROLES, SHOOT_STATUSES } from "@/lib/types";
 
 export const expenseFormSchema = z.object({
@@ -13,7 +14,19 @@ export const expenseFormSchema = z.object({
     .max(2000),
   categoryId: z.string().min(1, "Category is required"),
   vendorId: z.string().optional(),
-});
+  priority: z.union([z.literal(""), z.enum(PRIORITIES)]).optional(),
+  dueDate: z.string().optional(),
+  advancePaid: z
+    .union([z.literal(""), z.coerce.number().nonnegative("Advance can't be negative")])
+    .optional(),
+  invoiceUrl: z
+    .union([z.literal(""), z.string().trim().url("Invoice link must be a URL").max(1000)])
+    .optional(),
+  remarks: z.string().trim().max(2000).optional(),
+}).refine(
+  (d) => typeof d.advancePaid !== "number" || d.advancePaid <= d.amount,
+  { message: "Advance paid can't exceed the amount", path: ["advancePaid"] },
+);
 
 export const shootFormSchema = z
   .object({

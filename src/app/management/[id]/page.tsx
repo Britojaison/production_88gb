@@ -3,12 +3,13 @@ import { notFound } from "next/navigation";
 import { approveExpense, rejectExpense } from "@/app/actions/expenses";
 import { AppShell } from "@/components/AppShell";
 import { MarkPaidButton } from "@/components/MarkPaidButton";
+import { PaymentTermsList } from "@/components/PaymentTermsList";
 import { PaidBadge, StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import type { ExpenseStatus } from "@/lib/types";
-import { publicUploadUrl } from "@/lib/uploads";
+import { receiptHref } from "@/lib/uploads";
 
 export const instant = false;
 
@@ -109,12 +110,13 @@ export default async function ManagementExpensePage({
                 {expense.vendorPaymentDetails}
               </dd>
             </div>
+            <PaymentTermsList expense={expense} now={new Date()} />
             {expense.receiptPath ? (
               <div>
                 <dt className="text-[var(--ink-faint)]">Receipt</dt>
                 <dd>
                   <a
-                    href={publicUploadUrl(expense.receiptPath)}
+                    href={receiptHref(expense.id)}
                     className="font-medium text-[var(--accent-ink)] underline"
                     target="_blank"
                     rel="noreferrer"

@@ -86,10 +86,11 @@ export function parseLegacyDetails(text: string | null | undefined): PaymentTerm
     invoiceUrl: null,
     remarks: null,
   };
-  for (const line of (text ?? "").split(/\r?\n/)) {
-    const m = line.match(/^\s*(Invoice|Priority|Advance|Due|Remarks)\s*:\s*(.*)$/i);
+  // Two legacy formats: one "Key: value" per line, or "Key: value | Key: value" on one line.
+  for (const line of (text ?? "").split(/\r?\n|\s\|\s/)) {
+    const m = line.match(/^\s*(Invoice(?: Link)?|Priority|Advance|Due|Remarks)\s*:\s*(.*)$/i);
     if (!m) continue;
-    const key = m[1]!.toLowerCase();
+    const key = m[1]!.toLowerCase().startsWith("invoice") ? "invoice" : m[1]!.toLowerCase();
     const val = m[2]!.trim();
     if (!val) continue;
     if (key === "invoice" && /^https?:\/\//i.test(val)) out.invoiceUrl = val;

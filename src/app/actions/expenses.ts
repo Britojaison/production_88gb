@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { logExpenseAudit } from "@/lib/audit";
+import { invalidateMemoryCache } from "@/lib/data-cache";
 import { notifyAllManagement, notifyUsers } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { requireDbUser } from "@/lib/session";
@@ -25,6 +26,13 @@ function parseExpenseForm(formData: FormData) {
 }
 
 function revalidateShootPaths(shootId: string, expenseId?: string) {
+  invalidateMemoryCache();
+  try {
+    revalidateTag("expenses", { expire: 0 });
+    revalidateTag("shoots", { expire: 0 });
+  } catch {
+    // ignore outside active request context
+  }
   revalidatePath("/shoots");
   revalidatePath(`/shoots/${shootId}`);
   if (expenseId) {

@@ -36,9 +36,9 @@ export function ShootCard({
   const extra = brands.length - shown.length;
 
   return (
-    <Link href={`/shoots/${id}`} className="shoot-card group">
+    <Link href={`/shoots/${id}`} prefetch={true} className="shoot-card group">
       <div className="shoot-card-logos">
-        <div className="absolute right-3 top-3 z-10">
+        <div className="absolute right-2 top-2 z-10 sm:right-3 sm:top-3">
           <ShootStatusBadge status={status as ShootStatus} />
         </div>
         {shown.length === 0 ? (
@@ -56,15 +56,24 @@ export function ShootCard({
               brand.logoPath ? (
                 <span
                   key={brand.name}
-                  className="brand-logo-tile"
+                  className="brand-logo-tile relative overflow-hidden"
                   title={brand.name}
                 >
+                  <span
+                    className="brand-mark-fallback absolute inset-0 !w-full !max-w-full opacity-60"
+                    aria-hidden
+                  >
+                    {brandMonogram(brand.name)}
+                  </span>
                   <Image
                     src={brand.logoPath}
                     alt={brand.name}
                     fill
-                    sizes="(max-width: 640px) 90vw, (max-width: 1280px) 40vw, 28vw"
-                    className="brand-logo-img"
+                    sizes="(max-width: 640px) 45vw, (max-width: 1280px) 40vw, 28vw"
+                    className="brand-logo-img relative z-10 transition-opacity duration-200"
+                    loading="lazy"
+                    decoding="async"
+                    unoptimized
                   />
                 </span>
               ) : (
@@ -86,30 +95,33 @@ export function ShootCard({
           </div>
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-2.5 p-4">
+      <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:gap-2.5 sm:p-4">
         <div className="min-w-0">
-          <h2 className="line-clamp-2 text-[1rem] font-semibold leading-snug tracking-tight text-[var(--ink)]">
+          <h2 className="line-clamp-2 text-xs font-semibold leading-snug tracking-tight text-[var(--ink)] sm:text-base">
             {name}
           </h2>
           {brands.length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {brands.slice(0, 3).map((b) => (
-                <span key={b.name} className="brand-chip truncate">
+            <div className="mt-1 flex flex-wrap gap-1 sm:mt-2">
+              {brands.slice(0, 2).map((b) => (
+                <span
+                  key={b.name}
+                  className="brand-chip max-w-[85px] truncate sm:max-w-none"
+                >
                   {b.name}
                 </span>
               ))}
-              {brands.length > 3 ? (
-                <span className="brand-chip">+{brands.length - 3}</span>
+              {brands.length > 2 ? (
+                <span className="brand-chip">+{brands.length - 2}</span>
               ) : null}
             </div>
           ) : null}
         </div>
-        <p className="text-xs text-[var(--ink-muted)]">
+        <p className="truncate text-[0.6875rem] text-[var(--ink-muted)] sm:text-xs">
           {formatDateRange(startDate, endDate)}
         </p>
-        <div className="mt-auto space-y-1.5 border-t border-[var(--border)] pt-3">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-xs text-[var(--ink-faint)]">
+        <div className="mt-auto space-y-1 border-t border-[var(--border)] pt-2 sm:space-y-1.5 sm:pt-3">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-2">
+            <span className="text-[0.6875rem] text-[var(--ink-faint)] sm:text-xs">
               {expenseCount === 1 ? "1 expense" : `${expenseCount} expenses`}
             </span>
             <span className="amount-lg text-[var(--ink)]">
@@ -117,8 +129,8 @@ export function ShootCard({
             </span>
           </div>
           {budget != null ? (
-            <div className="flex items-baseline justify-between gap-2 text-xs text-[var(--ink-muted)]">
-              <span>Budget {formatCurrency(budget)}</span>
+            <div className="flex flex-col gap-0.5 text-[0.65rem] text-[var(--ink-muted)] sm:flex-row sm:items-baseline sm:justify-between sm:gap-2 sm:text-xs">
+              <span className="truncate">Budget {formatCurrency(budget)}</span>
               <span
                 className={
                   remaining != null && remaining < 0

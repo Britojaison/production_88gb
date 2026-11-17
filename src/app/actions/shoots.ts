@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseBrandFormFields, resolveBrandIds } from "@/lib/brands";
+import { invalidateMemoryCache } from "@/lib/data-cache";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { shootFormSchema } from "@/lib/validations";
@@ -61,6 +62,12 @@ export async function createShoot(
 
   await syncShootBrands(shoot.id, formData);
 
+  invalidateMemoryCache();
+  try {
+    revalidateTag("shoots", { expire: 0 });
+  } catch {
+    // ignore
+  }
   revalidatePath("/shoots");
   revalidatePath("/brands");
   redirect(`/shoots/${shoot.id}`);
@@ -98,8 +105,35 @@ export async function updateShoot(
 
   await syncShootBrands(id, formData);
 
+  invalidateMemoryCache();
+  try {
+    revalidateTag("shoots", { expire: 0 });
+  } catch {
+    // ignore
+  }
   revalidatePath("/shoots");
   revalidatePath(`/shoots/${id}`);
   revalidatePath("/brands");
   redirect(`/shoots/${id}`);
+}
+
+export async function getMoreShootsAction({
+  offset,
+  limit = 6,
+  status,
+  q,
+}: {
+  offset: number;
+  limit?: number;
+  status?: string;
+  q?: string;
+}) {
+  const { getCachedShoots } = await import("@/lib/data-cache");
+  const data = await getCachedShoots({ status, q, limit, offset });
+
+  return {
+    shoots: data.shoots,
+    totalCount: data.totalCount,
+    hasMore: offset + data.shoots.length < data.totalCount,
+  };
 }

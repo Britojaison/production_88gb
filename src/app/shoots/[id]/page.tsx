@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { ExpenseFilters } from "@/components/ExpenseFilters";
 import { PaidBadge, ShootStatusBadge, StatusBadge } from "@/components/StatusBadge";
+import { getCachedCategories, getCachedShootDetail } from "@/lib/data-cache";
 import { buildExpenseWhere } from "@/lib/expense-query";
 import { formatCurrency, formatDate, formatDateRange } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -24,21 +25,18 @@ export default async function ShootDetailPage({
   const session = await requireAnyRole("VIDEO_TEAM", "MANAGEMENT");
   const isMgmt = session.user.role === "MANAGEMENT";
 
-  const shoot = await prisma.shoot.findUnique({
-    where: { id },
-    include: {
-      brands: {
-        include: { brand: true },
-        orderBy: { brand: { name: "asc" } },
-      },
-    },
-  });
-  if (!shoot) notFound();
-  const brandNames = shoot.brands.map((sb) => sb.brand.name);
+  const hasFilters = Boolean(
+    filters.q ||
+      filters.status ||
+      filters.categoryId ||
+      filters.paidTo ||
+      filters.paid ||
+      filters.from ||
+      filters.to,
+  );
 
-  const categories = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
   const where = buildExpenseWhere({
-    shootId: shoot.id,
+    shootId: id,
     q: filters.q,
     status: filters.status,
     categoryId: filters.categoryId,
@@ -47,24 +45,34 @@ export default async function ShootDetailPage({
     from: filters.from,
     to: filters.to,
   });
-  // Team only sees their own rows; management sees every expense on the shoot
   if (!isMgmt) {
     where.submitterId = session.user.id;
   }
 
-  const expenses = await prisma.expense.findMany({
-    where,
-    include: { category: true },
-    orderBy: { updatedAt: "desc" },
-  });
-
   const totalsWhere = isMgmt
-    ? { shootId: shoot.id }
-    : { shootId: shoot.id, submitterId: session.user.id };
-  const allForTotals = await prisma.expense.findMany({
-    where: totalsWhere,
-    include: { category: true },
-  });
+    ? { shootId: id }
+    : { shootId: id, submitterId: session.user.id };
+
+  const [shoot, categories, expenses, totalsData] = await Promise.all([
+    getCachedShootDetail(id),
+    getCachedCategories(),
+    prisma.expense.findMany({
+      where,
+      include: { category: true },
+      orderBy: { updatedAt: "desc" },
+    }),
+    hasFilters
+      ? prisma.expense.findMany({
+          where: totalsWhere,
+          include: { category: true },
+        })
+      : null,
+  ]);
+
+  if (!shoot) notFound();
+  const brandNames = shoot.brands.map((sb) => sb.brand.name);
+
+  const allForTotals = totalsData ?? expenses;
   const spent = allForTotals.reduce((s, e) => s + e.amount, 0);
   const byCategory = new Map<string, number>();
   for (const e of allForTotals) {
@@ -81,7 +89,7 @@ export default async function ShootDetailPage({
     <AppShell name={session.user.name} role={session.user.role} >
       <main className="page-shell page-enter">
         <div className="mb-4">
-          <Link href="/shoots" className="back-link">
+          <Link href="/shoots" prefetch={true} className="back-link">
             ← Back to shoots
           </Link>
         </div>

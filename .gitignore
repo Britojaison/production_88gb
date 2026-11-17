@@ -31,6 +31,7 @@
 # uploaded receipts (keep folder)
 /public/uploads/*
 !/public/uploads/.gitkeep
+/public/client-logos-original
 
 # debug
 npm-debug.log*

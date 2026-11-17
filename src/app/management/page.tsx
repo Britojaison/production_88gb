@@ -3,6 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { ExpenseFilters } from "@/components/ExpenseFilters";
 import { MarkPaidButton } from "@/components/MarkPaidButton";
 import { PaidBadge, StatusBadge } from "@/components/StatusBadge";
+import { getCachedCategories } from "@/lib/data-cache";
 import { buildExpenseWhere } from "@/lib/expense-query";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -37,7 +38,7 @@ export default async function ManagementPage({
   }
 
   const [categories, expenses] = await Promise.all([
-    prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    getCachedCategories(),
     prisma.expense.findMany({
       where,
       include: {

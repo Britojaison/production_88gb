@@ -1,8 +1,20 @@
 import type { ReactNode } from "react";
 import { AppChrome } from "@/components/AppChrome";
+import { getFromMemory, setToMemory } from "@/lib/data-cache";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { getSession, getDbUserByEmail } from "@/lib/session";
 import type { Role } from "@/lib/types";
+
+async function getUnreadNotificationCount(userId: string) {
+  const key = `unread-notifications:${userId}`;
+  const cached = getFromMemory<number>(key);
+  if (cached !== undefined) return cached;
+
+  const count = await prisma.notification.count({
+    where: { userId, read: false },
+  });
+  return setToMemory(key, count, 30); // 30s TTL
+}
 
 export async function AppShell({
   name,
@@ -17,15 +29,10 @@ export async function AppShell({
   let unread = 0;
   let email = session?.user?.email ?? undefined;
   if (session?.user?.email) {
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email.toLowerCase().trim() },
-      select: { id: true, email: true },
-    });
+    const user = await getDbUserByEmail(session.user.email);
     if (user) {
       email = user.email;
-      unread = await prisma.notification.count({
-        where: { userId: user.id, read: false },
-      });
+      unread = await getUnreadNotificationCount(user.id);
     }
   }
 

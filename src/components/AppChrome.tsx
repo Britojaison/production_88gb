@@ -193,6 +193,7 @@ export function AppChrome({
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
                 className="sidebar-link"
                 data-active={active ? "true" : "false"}
                 title={label}

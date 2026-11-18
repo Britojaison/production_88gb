@@ -1,0 +1,6 @@
+# Never upload local secrets/config — set them in Vercel → Settings → Environment Variables
+.env
+.env.*
+!.env.example
+.next
+node_modules

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db, maybe } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { resolveReceiptUrl } from "@/lib/uploads";
 
@@ -15,10 +15,14 @@ export async function GET(
   }
 
   const { id } = await params;
-  const expense = await prisma.expense.findUnique({
-    where: { id },
-    select: { receiptPath: true, submitterId: true },
-  });
+  const expense = maybe(
+    await db()
+      .from("expenses_slate")
+      .select("receiptPath, submitterId")
+      .eq("id", id)
+      .maybeSingle(),
+    "load receipt",
+  );
 
   const canView =
     expense &&

@@ -1,6 +1,6 @@
 import { createVendor } from "@/app/actions/vendors";
 import { AppShell } from "@/components/AppShell";
-import { prisma } from "@/lib/prisma";
+import { listVendors } from "@/lib/vendors";
 import { requireDbUser } from "@/lib/session";
 import type { Role } from "@/lib/types";
 
@@ -8,7 +8,7 @@ export const instant = false;
 
 export default async function VendorsPage() {
   const { user } = await requireDbUser();
-  const vendors = await prisma.vendor.findMany({ orderBy: { name: "asc" } });
+  const vendors = await listVendors();
 
   return (
     <AppShell name={user.name} role={user.role as Role} >

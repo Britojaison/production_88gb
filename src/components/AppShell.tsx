@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { AppChrome } from "@/components/AppChrome";
 import { getFromMemory, setToMemory } from "@/lib/data-cache";
-import { prisma } from "@/lib/prisma";
+import { db, must } from "@/lib/db";
 import { getSession, getDbUserByEmail } from "@/lib/session";
 import type { Role } from "@/lib/types";
 
@@ -10,9 +10,13 @@ async function getUnreadNotificationCount(userId: string) {
   const cached = getFromMemory<number>(key);
   if (cached !== undefined) return cached;
 
-  const count = await prisma.notification.count({
-    where: { userId, read: false },
-  });
+  const res = await db()
+    .from("notifications_slate")
+    .select("id", { count: "exact", head: true })
+    .eq("userId", userId)
+    .eq("read", false);
+  must(res, "count notifications");
+  const count = res.count ?? 0;
   return setToMemory(key, count, 30); // 30s TTL
 }
 

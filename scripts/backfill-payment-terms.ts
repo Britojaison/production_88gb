@@ -7,32 +7,28 @@
  * Run: npm run db:backfill-terms           (dry run, prints what would change)
  *      npm run db:backfill-terms -- --apply
  */
-import { PrismaClient } from "@prisma/client";
+import { db, fetchAll, must, toDb, type Update } from "../src/lib/db";
 import { parseLegacyDetails } from "../src/lib/payment-terms";
 
-const prisma = new PrismaClient();
 const apply = process.argv.includes("--apply");
 
 async function main() {
-  const expenses = await prisma.expense.findMany({
-    select: {
-      id: true,
-      title: true,
-      vendorPaymentDetails: true,
-      priority: true,
-      dueDate: true,
-      advancePaid: true,
-      invoiceUrl: true,
-      remarks: true,
-    },
-  });
+  const expenses = await fetchAll(
+    (from, to) =>
+      db()
+        .from("expenses_slate")
+        .select("id, title, vendorPaymentDetails, priority, dueDate, advancePaid, invoiceUrl, remarks")
+        .order("id")
+        .range(from, to),
+    "load expenses",
+  );
 
   let changed = 0;
   for (const e of expenses) {
     const t = parseLegacyDetails(e.vendorPaymentDetails);
-    const data: Record<string, unknown> = {};
+    const data: Update<"expenses_slate"> = {};
     if (e.priority == null && t.priority) data.priority = t.priority;
-    if (e.dueDate == null && t.dueDate) data.dueDate = t.dueDate;
+    if (e.dueDate == null && t.dueDate) data.dueDate = toDb(t.dueDate);
     if (e.advancePaid == null && t.advancePaid != null) data.advancePaid = t.advancePaid;
     if (e.invoiceUrl == null && t.invoiceUrl) data.invoiceUrl = t.invoiceUrl;
     if (e.remarks == null && t.remarks) data.remarks = t.remarks;
@@ -40,7 +36,7 @@ async function main() {
 
     changed++;
     if (apply) {
-      await prisma.expense.update({ where: { id: e.id }, data });
+      must(await db().from("expenses_slate").update(data).eq("id", e.id), `update ${e.id}`);
     } else if (changed <= 10) {
       console.log(e.title, data);
     }
@@ -52,9 +48,7 @@ async function main() {
   );
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

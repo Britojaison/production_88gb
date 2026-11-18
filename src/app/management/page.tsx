@@ -4,9 +4,8 @@ import { ExpenseFilters } from "@/components/ExpenseFilters";
 import { MarkPaidButton } from "@/components/MarkPaidButton";
 import { PaidBadge, StatusBadge } from "@/components/StatusBadge";
 import { getCachedCategories } from "@/lib/data-cache";
-import { buildExpenseWhere } from "@/lib/expense-query";
+import { listExpenses } from "@/lib/expense-query";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import type { ExpenseStatus } from "@/lib/types";
 
@@ -23,31 +22,26 @@ export default async function ManagementPage({
   // Imported queue is mostly APPROVED + unpaid — don't default to SUBMITTED
   const statusDefault = filters.status ?? "ALL";
   const paidDefault = filters.paid ?? "UNPAID";
-  const where = buildExpenseWhere({
-    q: filters.q,
-    status: statusDefault,
-    categoryId: filters.categoryId,
-    paidTo: filters.paidTo,
-    paid: paidDefault,
-    from: filters.from,
-    to: filters.to,
-  });
-  // Always hide drafts on the review queue unless explicitly filtered
-  if (statusDefault === "ALL") {
-    where.status = { in: ["SUBMITTED", "APPROVED", "REJECTED"] };
-  }
-
   const [categories, expenses] = await Promise.all([
     getCachedCategories(),
-    prisma.expense.findMany({
-      where,
-      include: {
-        submitter: { select: { name: true, email: true } },
-        shoot: { select: { name: true } },
-        category: true,
+    listExpenses(
+      {
+        q: filters.q,
+        status: statusDefault,
+        // Always hide drafts on the review queue unless explicitly filtered
+        statusIn: ["SUBMITTED", "APPROVED", "REJECTED"],
+        categoryId: filters.categoryId,
+        paidTo: filters.paidTo,
+        paid: paidDefault,
+        from: filters.from,
+        to: filters.to,
       },
-      orderBy: [{ paid: "asc" }, { submittedAt: "asc" }, { date: "asc" }],
-    }),
+      [
+        { column: "paid", ascending: true },
+        { column: "submittedAt", ascending: true },
+        { column: "date", ascending: true },
+      ],
+    ),
   ]);
 
   const exportQs = new URLSearchParams();
@@ -145,6 +139,7 @@ export default async function ManagementPage({
                       <MarkPaidButton
                         expenseId={expense.id}
                         paid={expense.paid}
+                        status={expense.status}
                         compact
                       />
                     </td>

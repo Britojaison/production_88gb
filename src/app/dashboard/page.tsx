@@ -1,13 +1,12 @@
 import Link from "next/link";
-import type { Prisma } from "@prisma/client";
 import { AppShell } from "@/components/AppShell";
 import { BarList, BudgetBurn, MonthColumns, type BudgetRow } from "@/components/DashboardCharts";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getCachedBrands } from "@/lib/data-cache";
 import { financialYear, formatCompactINR, summarize } from "@/lib/dashboard";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { COMMITTED_STATUSES, priorityLabel } from "@/lib/payment-terms";
-import { prisma } from "@/lib/prisma";
+import { priorityLabel } from "@/lib/payment-terms";
+import { loadDashboardData } from "@/lib/dashboard-data";
 import { requireRole } from "@/lib/session";
 import type { ExpenseStatus } from "@/lib/types";
 
@@ -32,62 +31,9 @@ export default async function DashboardPage({
   const fy = financialYear(now);
   const last90 = new Date(now.getTime() - 90 * 864e5);
 
-  const shootWhere: Prisma.ShootWhereInput = brandId
-    ? { brands: { some: { brandId } } }
-    : {};
-  const expenseWhere: Prisma.ExpenseWhereInput = {
-    status: { in: [...COMMITTED_STATUSES] },
-    ...(brandId ? { shoot: shootWhere } : {}),
-    ...(from || to
-      ? {
-          date: {
-            ...(from ? { gte: new Date(from) } : {}),
-            ...(to ? { lte: new Date(`${to}T23:59:59.999Z`) } : {}),
-          },
-        }
-      : {}),
-  };
-
-  const [brands, expenses, budgetShoots] = await Promise.all([
+  const [brands, { expenses, budgetShoots }] = await Promise.all([
     getCachedBrands(),
-    prisma.expense.findMany({
-      where: expenseWhere,
-      select: {
-        id: true,
-        title: true,
-        amount: true,
-        date: true,
-        status: true,
-        paid: true,
-        advancePaid: true,
-        dueDate: true,
-        priority: true,
-        paidTo: true,
-        vendorId: true,
-        category: { select: { name: true } },
-        shoot: {
-          select: {
-            id: true,
-            name: true,
-            brands: { select: { brand: { select: { name: true } } } },
-          },
-        },
-      },
-    }),
-    // Budget burn is lifetime per shoot (not date-filtered): a budget covers the whole shoot.
-    prisma.shoot.findMany({
-      where: { ...shootWhere, budget: { not: null } },
-      select: {
-        id: true,
-        name: true,
-        budget: true,
-        status: true,
-        expenses: {
-          where: { status: { in: [...COMMITTED_STATUSES] } },
-          select: { amount: true },
-        },
-      },
-    }),
+    loadDashboardData({ from, to, brandId }),
   ]);
 
   const s = summarize(expenses, now);

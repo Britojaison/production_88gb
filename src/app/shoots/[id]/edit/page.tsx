@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { updateShoot } from "@/app/actions/shoots";
 import { AppShell } from "@/components/AppShell";
 import { ShootForm } from "@/components/ShootForm";
-import { prisma } from "@/lib/prisma";
+import { getCachedBrands, getCachedShootDetail } from "@/lib/data-cache";
 import { requireRole } from "@/lib/session";
 import type { ShootStatus } from "@/lib/types";
 
@@ -18,11 +18,8 @@ export default async function EditShootPage({
   const session = await requireRole("VIDEO_TEAM");
 
   const [shoot, brands] = await Promise.all([
-    prisma.shoot.findUnique({
-      where: { id },
-      include: { brands: true },
-    }),
-    prisma.brand.findMany({ orderBy: { name: "asc" } }),
+    getCachedShootDetail(id),
+    getCachedBrands(),
   ]);
   if (!shoot) {
     notFound();

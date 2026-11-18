@@ -1,13 +1,20 @@
 import { createUser } from "@/app/actions/users";
 import { AppShell } from "@/components/AppShell";
-import { prisma } from "@/lib/prisma";
+import { db, must } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 
 export const instant = false;
 
 export default async function UsersPage() {
   const session = await requireRole("MANAGEMENT");
-  const users = await prisma.user.findMany({ orderBy: { createdAt: "desc" } });
+  // Never select passwordHash for display
+  const users = must(
+    await db()
+      .from("users_slate")
+      .select("id, name, email, role, createdAt")
+      .order("createdAt", { ascending: false }),
+    "load users",
+  );
 
   return (
     <AppShell name={session.user.name} role={session.user.role} >

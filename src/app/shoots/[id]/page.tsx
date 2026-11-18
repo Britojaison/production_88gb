@@ -4,10 +4,9 @@ import { AppShell } from "@/components/AppShell";
 import { ExpenseFilters } from "@/components/ExpenseFilters";
 import { PaidBadge, ShootStatusBadge, StatusBadge } from "@/components/StatusBadge";
 import { getCachedCategories, getCachedShootDetail } from "@/lib/data-cache";
-import { buildExpenseWhere } from "@/lib/expense-query";
+import { listExpenses } from "@/lib/expense-query";
 import { formatCurrency, formatDate, formatDateRange } from "@/lib/format";
 import { isCommitted } from "@/lib/payment-terms";
-import { prisma } from "@/lib/prisma";
 import { requireAnyRole } from "@/lib/session";
 import type { ExpenseStatus, ShootStatus } from "@/lib/types";
 import { receiptHref } from "@/lib/uploads";
@@ -36,38 +35,26 @@ export default async function ShootDetailPage({
       filters.to,
   );
 
-  const where = buildExpenseWhere({
-    shootId: id,
-    q: filters.q,
-    status: filters.status,
-    categoryId: filters.categoryId,
-    paidTo: filters.paidTo,
-    paid: filters.paid,
-    from: filters.from,
-    to: filters.to,
-  });
-  if (!isMgmt) {
-    where.submitterId = session.user.id;
-  }
-
-  const totalsWhere = isMgmt
-    ? { shootId: id }
-    : { shootId: id, submitterId: session.user.id };
+  const submitterId = isMgmt ? undefined : session.user.id;
 
   const [shoot, categories, expenses, totalsData] = await Promise.all([
     getCachedShootDetail(id),
     getCachedCategories(),
-    prisma.expense.findMany({
-      where,
-      include: { category: true },
-      orderBy: { updatedAt: "desc" },
-    }),
-    hasFilters
-      ? prisma.expense.findMany({
-          where: totalsWhere,
-          include: { category: true },
-        })
-      : null,
+    listExpenses(
+      {
+        shootId: id,
+        submitterId,
+        q: filters.q,
+        status: filters.status,
+        categoryId: filters.categoryId,
+        paidTo: filters.paidTo,
+        paid: filters.paid,
+        from: filters.from,
+        to: filters.to,
+      },
+      [{ column: "updatedAt", ascending: false }],
+    ),
+    hasFilters ? listExpenses({ shootId: id, submitterId }) : null,
   ]);
 
   if (!shoot) notFound();

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { toCsv } from "@/lib/csv";
 import { outstandingAmount } from "@/lib/payment-terms";
-import { buildExpenseWhere } from "@/lib/expense-query";
-import { prisma } from "@/lib/prisma";
+import { listExpenses } from "@/lib/expense-query";
 import { getSession } from "@/lib/session";
 
 export const instant = false;
@@ -17,28 +16,20 @@ export async function GET(request: Request) {
 
   const status = url.searchParams.get("status") || "ALL";
   const paid = url.searchParams.get("paid") || "UNPAID";
-  const where = buildExpenseWhere({
-    q: url.searchParams.get("q"),
-    status,
-    categoryId: url.searchParams.get("categoryId"),
-    paidTo: url.searchParams.get("paidTo"),
-    paid,
-    from: url.searchParams.get("from"),
-    to: url.searchParams.get("to"),
-  });
-  if (status === "ALL") {
-    where.status = { in: ["SUBMITTED", "APPROVED", "REJECTED"] };
-  }
-
-  const expenses = await prisma.expense.findMany({
-    where,
-    include: {
-      category: true,
-      shoot: true,
-      submitter: { select: { name: true, email: true } },
+  const expenses = await listExpenses(
+    {
+      q: url.searchParams.get("q"),
+      status,
+      // Review queue never shows drafts unless explicitly filtered
+      statusIn: ["SUBMITTED", "APPROVED", "REJECTED"],
+      categoryId: url.searchParams.get("categoryId"),
+      paidTo: url.searchParams.get("paidTo"),
+      paid,
+      from: url.searchParams.get("from"),
+      to: url.searchParams.get("to"),
     },
-    orderBy: { submittedAt: "asc" },
-  });
+    [{ column: "submittedAt", ascending: true }],
+  );
 
   const csv = toCsv(
     [

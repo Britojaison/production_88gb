@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { db, maybe, must, revive } from "@/lib/db";
 
 /**
  * Resolve vendorId for an expense:
@@ -15,29 +15,33 @@ export async function resolveVendorForExpense(opts: {
   const paymentDetails = opts.paymentDetails.trim();
 
   if (opts.vendorId) {
-    const selected = await prisma.vendor.findUnique({
-      where: { id: opts.vendorId },
-    });
+    const selected = maybe(
+      await db().from("vendors_slate").select("id").eq("id", opts.vendorId).maybeSingle(),
+      "load vendor",
+    );
     if (selected) {
       return selected.id;
     }
   }
 
-  const all = await prisma.vendor.findMany({
-    select: { id: true, name: true },
-  });
-  const existing = all.find(
-    (v) => v.name.toLowerCase() === paidTo.toLowerCase(),
-  );
+  const existing = must(
+    await db().from("vendors_slate").select("id").ilike("name", paidTo.replace(/[%_\\]/g, "\\$&")).limit(1),
+    "match vendor",
+  )[0];
   if (existing) {
     return existing.id;
   }
 
-  const created = await prisma.vendor.create({
-    data: {
-      name: paidTo,
-      paymentDetails,
-    },
-  });
+  const created = must(
+    await db().from("vendors_slate").insert({ name: paidTo, paymentDetails }).select("id").single(),
+    "create vendor",
+  );
   return created.id;
+}
+
+/** Vendor directory, A–Z. */
+export async function listVendors() {
+  return revive(
+    must(await db().from("vendors_slate").select("*").order("name", { ascending: true }), "load vendors"),
+  );
 }

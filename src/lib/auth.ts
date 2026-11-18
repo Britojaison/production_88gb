@@ -1,7 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
-import { prisma } from "@/lib/prisma";
 import { getDbUserByEmail } from "@/lib/user-lookup";
 import type { Role } from "@/lib/types";
 
@@ -47,9 +46,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email.toLowerCase().trim() },
-        });
+        const user = await getDbUserByEmail(credentials.email);
 
         if (!user) {
           return null;

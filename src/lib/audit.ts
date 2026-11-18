@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { db, must } from "@/lib/db";
 
 export async function logExpenseAudit(opts: {
   expenseId: string;
@@ -8,14 +8,15 @@ export async function logExpenseAudit(opts: {
   toStatus?: string | null;
   note?: string | null;
 }) {
-  await prisma.auditEvent.create({
-    data: {
+  must(
+    await db().from("audit_events_slate").insert({
       expenseId: opts.expenseId,
       actorId: opts.actorId,
       action: opts.action,
       fromStatus: opts.fromStatus ?? null,
       toStatus: opts.toStatus ?? null,
       note: opts.note ?? null,
-    },
-  });
+    }),
+    "write audit event",
+  );
 }

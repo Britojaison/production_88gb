@@ -2,7 +2,7 @@
 
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { db, maybe, must } from "@/lib/db";
 import { requireDbUser } from "@/lib/session";
 import { userFormSchema } from "@/lib/validations";
 
@@ -20,19 +20,23 @@ export async function createUser(formData: FormData): Promise<void> {
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = maybe(
+    await db().from("users_slate").select("id").eq("email", email).maybeSingle(),
+    "check user",
+  );
   if (existing) {
     return;
   }
 
-  await prisma.user.create({
-    data: {
+  must(
+    await db().from("users_slate").insert({
       email,
       name: parsed.data.name,
       passwordHash: await hash(parsed.data.password, 10),
       role: parsed.data.role,
-    },
-  });
+    }),
+    "create user",
+  );
 
   revalidatePath("/management/users");
 }

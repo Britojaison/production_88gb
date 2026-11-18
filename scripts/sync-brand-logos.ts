@@ -2,17 +2,19 @@
  * Apply BRAND_LOGO_FILES → Brand.logoPath for matching brand names.
  * Usage: npx tsx scripts/sync-brand-logos.ts
  */
-import { PrismaClient } from "@prisma/client";
+import { db, must } from "../src/lib/db";
 import {
   BRAND_LOGO_FILES,
   canonicalBrandName,
   normalizeBrandKey,
 } from "../src/lib/brand-logos";
 
-const prisma = new PrismaClient();
 
 async function main() {
-  const brands = await prisma.brand.findMany({ orderBy: { name: "asc" } });
+  const brands = must(
+    await db().from("brands_slate").select("*").order("name", { ascending: true }),
+    "load brands",
+  );
   const byKey = new Map(
     brands.map((b) => [normalizeBrandKey(canonicalBrandName(b.name)), b]),
   );
@@ -28,10 +30,7 @@ async function main() {
       unmatchedFiles.push(`${row.sourceFile} → ${row.brandName} (no Brand row)`);
       continue;
     }
-    await prisma.brand.update({
-      where: { id: brand.id },
-      data: { logoPath: row.path },
-    });
+    must(await db().from("brands_slate").update({ logoPath: row.path }).eq("id", brand.id), "set logo");
     matched.push({
       file: row.sourceFile,
       brand: brand.name,
@@ -61,11 +60,7 @@ async function main() {
   }
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

@@ -8,7 +8,7 @@
 import { createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
 import path from "node:path";
-import { PrismaClient } from "@prisma/client";
+import { db, must, maybe, toDb } from "../src/lib/db";
 import { hash } from "bcryptjs";
 import { EXPENSE_CATEGORIES } from "../src/lib/categories";
 import { SEED_BRANDS } from "../src/lib/brands";
@@ -19,7 +19,6 @@ import {
   parseMoney,
 } from "../src/lib/payment-terms";
 
-const prisma = new PrismaClient();
 
 export const CSV_REL =
   "public/88GB Production Expenses - Master_Payment_Approvals_Full.csv";
@@ -268,69 +267,49 @@ export async function importMasterCsv(opts?: {
     "Demo sample shoots/expenses replaced; login users preserved when keepUsers.",
   ];
 
-  // Wipe operational data; optionally keep users
-  await prisma.auditEvent.deleteMany();
-  await prisma.notification.deleteMany();
-  await prisma.expense.deleteMany();
-  await prisma.shootBrand.deleteMany();
-  await prisma.brand.deleteMany();
-  await prisma.vendor.deleteMany();
-  await prisma.category.deleteMany();
-  await prisma.shoot.deleteMany();
+  // Wipe operational data; optionally keep users.
+  // PostgREST refuses unfiltered deletes, so match every row explicitly.
+  const wipe = async (
+    table:
+      | "audit_events_slate"
+      | "notifications_slate"
+      | "expenses_slate"
+      | "brands_slate"
+      | "vendors_slate"
+      | "categories_slate"
+      | "shoots_slate"
+      | "users_slate",
+  ) => must(await db().from(table).delete().neq("id", ""), `wipe ${table}`);
+  await wipe("audit_events_slate");
+  await wipe("notifications_slate");
+  await wipe("expenses_slate");
+  must(await db().from("shoot_brands_slate").delete().neq("shootId", ""), "wipe shoot brands");
+  await wipe("brands_slate");
+  await wipe("vendors_slate");
+  await wipe("categories_slate");
+  await wipe("shoots_slate");
+
+  const createUser = async (email: string, name: string, role: string, passwordHash: string) =>
+    must(
+      await db().from("users_slate").insert({ email, name, role, passwordHash }).select("id").single(),
+      `create ${email}`,
+    );
+  const findUser = async (email: string) =>
+    maybe(await db().from("users_slate").select("id").eq("email", email).maybeSingle(), `find ${email}`);
 
   let teamId: string;
   if (opts?.keepUsers) {
-    const team = await prisma.user.findUnique({
-      where: { email: "team@88gb.local" },
-    });
-    const mgmt = await prisma.user.findUnique({
-      where: { email: "mgmt@88gb.local" },
-    });
-    if (!team || !mgmt) {
-      const passwordHash = await hash("password123", 10);
-      const t =
-        team ??
-        (await prisma.user.create({
-          data: {
-            email: "team@88gb.local",
-            name: "Video Team Member",
-            passwordHash,
-            role: "VIDEO_TEAM",
-          },
-        }));
-      if (!mgmt) {
-        await prisma.user.create({
-          data: {
-            email: "mgmt@88gb.local",
-            name: "Production Manager",
-            passwordHash,
-            role: "MANAGEMENT",
-          },
-        });
-      }
-      teamId = t.id;
-    } else {
-      teamId = team.id;
-    }
-  } else {
-    await prisma.user.deleteMany();
+    const team = await findUser("team@88gb.local");
+    const mgmt = await findUser("mgmt@88gb.local");
     const passwordHash = await hash("password123", 10);
-    const team = await prisma.user.create({
-      data: {
-        email: "team@88gb.local",
-        name: "Video Team Member",
-        passwordHash,
-        role: "VIDEO_TEAM",
-      },
-    });
-    await prisma.user.create({
-      data: {
-        email: "mgmt@88gb.local",
-        name: "Production Manager",
-        passwordHash,
-        role: "MANAGEMENT",
-      },
-    });
+    const t = team ?? (await createUser("team@88gb.local", "Video Team Member", "VIDEO_TEAM", passwordHash));
+    if (!mgmt) await createUser("mgmt@88gb.local", "Production Manager", "MANAGEMENT", passwordHash);
+    teamId = t.id;
+  } else {
+    await wipe("users_slate");
+    const passwordHash = await hash("password123", 10);
+    const team = await createUser("team@88gb.local", "Video Team Member", "VIDEO_TEAM", passwordHash);
+    await createUser("mgmt@88gb.local", "Production Manager", "MANAGEMENT", passwordHash);
     teamId = team.id;
   }
 
@@ -347,8 +326,8 @@ export async function importMasterCsv(opts?: {
     }
   }
 
-  await prisma.category.createMany({
-    data: [
+  must(
+    await db().from("categories_slate").insert([
       ...EXPENSE_CATEGORIES.map((c, index) => ({
         name: c.name,
         slug: c.slug,
@@ -359,20 +338,21 @@ export async function importMasterCsv(opts?: {
         slug: slugify(name),
         sortOrder: EXPENSE_CATEGORIES.length + i,
       })),
-    ],
-  });
-  const categories = await prisma.category.findMany();
+    ]),
+    "create categories",
+  );
+  const categories = must(await db().from("categories_slate").select("*"), "load categories");
   const catByLower = Object.fromEntries(
     categories.map((c) => [c.name.toLowerCase(), c]),
   );
 
   // Seed brands first so aliases resolve to exact names
-  await prisma.brand.createMany({
-    data: SEED_BRANDS.map((name) => ({
-      name,
-      logoPath: logoPathForBrandName(name),
-    })),
-  });
+  must(
+    await db()
+      .from("brands_slate")
+      .insert(SEED_BRANDS.map((name) => ({ name, logoPath: logoPathForBrandName(name) }))),
+    "seed brands",
+  );
 
   type NormRow = {
     line: number;
@@ -474,29 +454,27 @@ export async function importMasterCsv(opts?: {
   for (const n of normalized) {
     for (const b of n.brands) brandNames.add(b);
   }
-  const existingBrands = await prisma.brand.findMany();
+  const existingBrands = must(await db().from("brands_slate").select("*"), "load brands");
   const existingLower = new Set(existingBrands.map((b) => b.name.toLowerCase()));
   let brandsCreated = 0;
   for (const name of brandNames) {
     if (!existingLower.has(name.toLowerCase())) {
-      await prisma.brand.create({
-        data: { name, logoPath: logoPathForBrandName(name) },
-      });
+      must(
+        await db().from("brands_slate").insert({ name, logoPath: logoPathForBrandName(name) }),
+        `create brand ${name}`,
+      );
       brandsCreated++;
       existingLower.add(name.toLowerCase());
     }
   }
   // Ensure known client logos are attached even when brands pre-existed
-  for (const b of await prisma.brand.findMany()) {
+  for (const b of must(await db().from("brands_slate").select("*"), "load brands")) {
     const logoPath = logoPathForBrandName(b.name);
     if (logoPath && b.logoPath !== logoPath) {
-      await prisma.brand.update({
-        where: { id: b.id },
-        data: { logoPath },
-      });
+      must(await db().from("brands_slate").update({ logoPath }).eq("id", b.id), "set logo");
     }
   }
-  const allBrands = await prisma.brand.findMany();
+  const allBrands = must(await db().from("brands_slate").select("*"), "load brands");
   const brandIdByLower = Object.fromEntries(
     allBrands.map((b) => [b.name.toLowerCase(), b.id]),
   );
@@ -506,12 +484,14 @@ export async function importMasterCsv(opts?: {
   const vendorIdByName: Record<string, string> = {};
   for (const name of payees) {
     const sample = normalized.find((n) => n.payee === name)!;
-    const v = await prisma.vendor.create({
-      data: {
-        name,
-        paymentDetails: sample.paymentDetails.slice(0, 2000),
-      },
-    });
+    const v = must(
+      await db()
+        .from("vendors_slate")
+        .insert({ name, paymentDetails: sample.paymentDetails.slice(0, 2000) })
+        .select("id")
+        .single(),
+      `create vendor ${name}`,
+    );
     vendorIdByName[name] = v.id;
   }
 
@@ -529,17 +509,22 @@ export async function importMasterCsv(opts?: {
     const startDate = new Date(Math.min(...dates));
     const endDate = new Date(Math.max(...dates));
     const allPaid = items.every((i) => i.paid);
-    const shoot = await prisma.shoot.create({
-      data: {
-        name: shootName,
-        startDate,
-        endDate: endDate.getTime() === startDate.getTime() ? null : endDate,
-        notes: `Imported from master CSV (${items.length} expense line${items.length === 1 ? "" : "s"}).`,
-        status: allPaid ? "WRAPPED" : "ACTIVE",
-        image: null,
-        budget: null,
-      },
-    });
+    const shoot = must(
+      await db()
+        .from("shoots_slate")
+        .insert({
+          name: shootName,
+          startDate: toDb(startDate),
+          endDate: endDate.getTime() === startDate.getTime() ? null : toDb(endDate),
+          notes: `Imported from master CSV (${items.length} expense line${items.length === 1 ? "" : "s"}).`,
+          status: allPaid ? "WRAPPED" : "ACTIVE",
+          image: null,
+          budget: null,
+        })
+        .select("id")
+        .single(),
+      `create shoot ${shootName}`,
+    );
 
     const brandIds = new Set<string>();
     for (const item of items) {
@@ -549,20 +534,20 @@ export async function importMasterCsv(opts?: {
       }
     }
     if (brandIds.size > 0) {
-      await prisma.shootBrand.createMany({
-        data: [...brandIds].map((brandId) => ({
-          shootId: shoot.id,
-          brandId,
-        })),
-      });
+      must(
+        await db()
+          .from("shoot_brands_slate")
+          .insert([...brandIds].map((brandId) => ({ shootId: shoot.id, brandId }))),
+        "link shoot brands",
+      );
     }
 
     for (const item of items) {
-      await prisma.expense.create({
-        data: {
+      must(
+        await db().from("expenses_slate").insert({
           shootId: shoot.id,
           title: item.title,
-          date: item.date,
+          date: toDb(item.date),
           amount: item.amount,
           paidTo: item.payee,
           vendorPaymentDetails: item.paymentDetails,
@@ -570,17 +555,18 @@ export async function importMasterCsv(opts?: {
           vendorId: vendorIdByName[item.payee],
           status: item.status,
           paid: item.paid,
-          paidAt: item.paidAt,
+          paidAt: toDb(item.paidAt),
           priority: item.priority,
-          dueDate: item.dueDate,
+          dueDate: toDb(item.dueDate),
           advancePaid: item.advancePaid,
           invoiceUrl: item.invoiceUrl,
           remarks: item.remarks,
           submitterId: teamId,
-          submittedAt: item.date,
-          reviewedAt: item.date,
-        },
-      });
+          submittedAt: toDb(item.date),
+          reviewedAt: toDb(item.date),
+        }),
+        `create expense line ${item.line}`,
+      );
       expensesCreated++;
     }
   }
@@ -625,8 +611,5 @@ if (isDirect) {
     .catch((e) => {
       console.error(e);
       process.exit(1);
-    })
-    .finally(async () => {
-      await prisma.$disconnect();
     });
 }

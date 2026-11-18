@@ -5,22 +5,21 @@ Local expense tracker for a video production team. Expenses live under **shoots*
 ## Stack
 
 - Next.js (App Router) + TypeScript + Tailwind
-- Prisma + PostgreSQL (Supabase)
+- Supabase (Postgres via `@supabase/supabase-js`, server-side service-role key) — no ORM
 - Supabase Storage for receipts (private bucket, served via signed URLs)
 - NextAuth credentials (email + password)
 
 ## Setup
 
 ```bash
-cp .env.example .env
+cp .env.example .env      # fill SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXTAUTH_SECRET
 npm install
-npm run db:setup    # ⚠ force-resets the database in DATABASE_URL + seeds
 npm run dev
 ```
 
-After schema changes without wiping data: `npm run db:sync` then restart `npm run dev`.
-
-After `db:setup`, **sign out and sign back in** (user ids change).
+Schema lives in Supabase; `supabase/schema.sql` is the reference. Change it with a
+migration (Supabase SQL editor), then update `supabase/schema.sql` and `src/lib/db/types.ts`.
+All tables have RLS on with no policies, so only the server (service-role key) can read/write.
 
 ## Seed logins
 
@@ -40,7 +39,7 @@ Seed also creates categories, vendors, brands/clients (MM wear, MilkymistD, Supe
 5. **Export** — “Export CSV” on shoot detail and management list (respects current filters).
 6. **Notifications** — Submit → management gets Alerts; approve/reject → submitter notified. Optional email: set `SMTP_HOST` later (stub logs only today).
 7. **Vendors** — `/vendors` directory; pick on expense form to prefills payee + payment details. Brands/clients — `/brands` directory; multi-select on shoot create/edit (type new names to auto-save); shown on shoot cards + detail.
-8. **Categories** — Required on expenses (Model, Freelancer, Makeup Artist, Camera Rental, Studio, Location, Cinematographers); management can add more; shoot detail shows totals by category. Reseed after category list changes: `npm run db:setup`.
+8. **Categories** — Required on expenses (Model, Freelancer, Makeup Artist, Camera Rental, Studio, Location, Cinematographers); management can add more; shoot detail shows totals by category. Reseed after category list changes: `npm run db:seed` (destructive).
 9. **Audit trail** — Expense detail (team + management) lists submit/approve/reject (and create/update) with actor + time.
 
 ## Dashboard (management)
@@ -62,7 +61,6 @@ Expenses carry structured `priority` (HIGH/MEDIUM/LOW), `dueDate`, `advancePaid`
 The CSV importer fills these directly. For data imported before these columns existed:
 
 ```bash
-npm run db:sync                        # add the new columns (non-destructive)
 npm run db:backfill-terms              # dry run
 npm run db:backfill-terms -- --apply   # copy terms out of the old payment-details text
 ```
@@ -85,10 +83,8 @@ and redirects to a 60-second signed URL. Move existing local files with
 | Command | Purpose |
 |---------|---------|
 | `npm run dev` | Dev server |
-| `npm run build` | Generate Prisma client + production build |
-| `npm run db:setup` | Reset DB + seed |
-| `npm run db:sync` | Push schema + regenerate client |
-| `npm run db:seed` | Re-seed only |
+| `npm run build` | Production build |
+| `npm run db:seed` | ⚠ Wipe all data + users, re-import CSV, create demo logins |
 | `npm run db:import` | ⚠ Replace shoots/expenses with the master CSV |
 | `npm run db:backfill-terms` | Fill payment-term columns from old text (`-- --apply`) |
 | `npm run receipts:migrate` | Upload local receipts to Supabase Storage |

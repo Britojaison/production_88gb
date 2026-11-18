@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { toCsv } from "@/lib/csv";
 import { outstandingAmount } from "@/lib/payment-terms";
-import { buildExpenseWhere } from "@/lib/expense-query";
-import { prisma } from "@/lib/prisma";
+import { listExpenses } from "@/lib/expense-query";
+import { getDbUserByEmail } from "@/lib/user-lookup";
 import { getSession } from "@/lib/session";
 
 export const instant = false;
@@ -19,32 +19,29 @@ export async function GET(
   const { id } = await params;
   const url = new URL(request.url);
 
-  const where = buildExpenseWhere({
-    shootId: id,
-    q: url.searchParams.get("q"),
-    status: url.searchParams.get("status"),
-    categoryId: url.searchParams.get("categoryId"),
-    paidTo: url.searchParams.get("paidTo"),
-    paid: url.searchParams.get("paid"),
-    from: url.searchParams.get("from"),
-    to: url.searchParams.get("to"),
-  });
-
+  let submitterId: string | undefined;
   if (session.user.role === "VIDEO_TEAM") {
-    const dbUser = await prisma.user.findUnique({
-      where: { email: session.user.email.toLowerCase().trim() },
-    });
+    const dbUser = await getDbUserByEmail(session.user.email);
     if (!dbUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    where.submitterId = dbUser.id;
+    submitterId = dbUser.id;
   }
 
-  const expenses = await prisma.expense.findMany({
-    where,
-    include: { category: true, shoot: true },
-    orderBy: { date: "asc" },
-  });
+  const expenses = await listExpenses(
+    {
+      shootId: id,
+      submitterId,
+      q: url.searchParams.get("q"),
+      status: url.searchParams.get("status"),
+      categoryId: url.searchParams.get("categoryId"),
+      paidTo: url.searchParams.get("paidTo"),
+      paid: url.searchParams.get("paid"),
+      from: url.searchParams.get("from"),
+      to: url.searchParams.get("to"),
+    },
+    [{ column: "date", ascending: true }],
+  );
 
   const csv = toCsv(
     [

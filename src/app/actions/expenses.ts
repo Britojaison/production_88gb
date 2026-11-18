@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { logExpenseAudit } from "@/lib/audit";
 import { invalidateMemoryCache } from "@/lib/data-cache";
 import { notifyAllManagement, notifyUsers } from "@/lib/notifications";
-import { prisma } from "@/lib/prisma";
+import { db, maybe, must, revive, toDb, type Update } from "@/lib/db";
 import { requireDbUser } from "@/lib/session";
 import { ExpenseStatus } from "@/lib/types";
 import { deleteReceiptFile, saveReceiptFile } from "@/lib/uploads";
@@ -41,11 +41,28 @@ function termsData(data: {
   const advance = typeof data.advancePaid === "number" ? data.advancePaid : null;
   return {
     priority: data.priority || null,
-    dueDate: data.dueDate ? new Date(data.dueDate) : null,
+    dueDate: data.dueDate ? toDb(new Date(data.dueDate)) : null,
     advancePaid: advance,
     invoiceUrl: data.invoiceUrl || null,
     remarks: data.remarks || null,
   };
+}
+
+/** Expense row (dates revived) with its shoot's name, or null. */
+async function loadExpense(id: string) {
+  const row = maybe(
+    await db()
+      .from("expenses_slate")
+      .select("*, shoot:shoots_slate(id, name)")
+      .eq("id", id)
+      .maybeSingle(),
+    "load expense",
+  );
+  return row ? revive(row) : null;
+}
+
+async function updateExpenseRow(id: string, data: Update<"expenses_slate">) {
+  must(await db().from("expenses_slate").update(data).eq("id", id), "update expense");
 }
 
 function revalidateShootPaths(shootId: string, expenseId?: string) {
@@ -111,7 +128,10 @@ export async function createExpense(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const shoot = await prisma.shoot.findUnique({ where: { id: shootId } });
+  const shoot = maybe(
+    await db().from("shoots_slate").select("id").eq("id", shootId).maybeSingle(),
+    "load shoot",
+  );
   if (!shoot) {
     return { error: "Shoot not found" };
   }
@@ -126,23 +146,28 @@ export async function createExpense(
     paymentDetails: data.vendorPaymentDetails,
   });
 
-  const expense = await prisma.expense.create({
-    data: {
-      shootId,
-      title: data.title,
-      date: new Date(data.date),
-      amount: data.amount,
-      paidTo: data.paidTo,
-      vendorPaymentDetails: data.vendorPaymentDetails,
-      categoryId: data.categoryId,
-      vendorId,
-      receiptPath: receipt.receiptPath,
-      receiptName: receipt.receiptName,
-      ...termsData(data),
-      status: ExpenseStatus.DRAFT,
-      submitterId: user.id,
-    },
-  });
+  const expense = must(
+    await db()
+      .from("expenses_slate")
+      .insert({
+        shootId,
+        title: data.title,
+        date: toDb(new Date(data.date)),
+        amount: data.amount,
+        paidTo: data.paidTo,
+        vendorPaymentDetails: data.vendorPaymentDetails,
+        categoryId: data.categoryId,
+        vendorId,
+        receiptPath: receipt.receiptPath,
+        receiptName: receipt.receiptName,
+        ...termsData(data),
+        status: ExpenseStatus.DRAFT,
+        submitterId: user.id,
+      })
+      .select("id")
+      .single(),
+    "create expense",
+  );
 
   await logExpenseAudit({
     expenseId: expense.id,
@@ -167,7 +192,7 @@ export async function updateExpense(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const existing = await prisma.expense.findUnique({ where: { id } });
+  const existing = await loadExpense(id);
   if (
     !existing ||
     existing.shootId !== shootId ||
@@ -195,25 +220,22 @@ export async function updateExpense(
     paymentDetails: data.vendorPaymentDetails,
   });
 
-  await prisma.expense.update({
-    where: { id },
-    data: {
-      title: data.title,
-      date: new Date(data.date),
-      amount: data.amount,
-      paidTo: data.paidTo,
-      vendorPaymentDetails: data.vendorPaymentDetails,
-      categoryId: data.categoryId,
-      vendorId,
-      receiptPath: receipt.receiptPath,
-      receiptName: receipt.receiptName,
-      ...termsData(data),
-      status: ExpenseStatus.DRAFT,
-      rejectionReason: null,
-      submittedAt: null,
-      reviewedAt: null,
-      reviewedById: null,
-    },
+  await updateExpenseRow(id, {
+    title: data.title,
+    date: toDb(new Date(data.date)),
+    amount: data.amount,
+    paidTo: data.paidTo,
+    vendorPaymentDetails: data.vendorPaymentDetails,
+    categoryId: data.categoryId,
+    vendorId,
+    receiptPath: receipt.receiptPath,
+    receiptName: receipt.receiptName,
+    ...termsData(data),
+    status: ExpenseStatus.DRAFT,
+    rejectionReason: null,
+    submittedAt: null,
+    reviewedAt: null,
+    reviewedById: null,
   });
 
   await logExpenseAudit({
@@ -233,10 +255,7 @@ export async function submitExpense(
   id: string,
 ): Promise<void> {
   const { user } = await requireDbUser("VIDEO_TEAM");
-  const existing = await prisma.expense.findUnique({
-    where: { id },
-    include: { shoot: true },
-  });
+  const existing = await loadExpense(id);
 
   if (
     !existing ||
@@ -252,15 +271,12 @@ export async function submitExpense(
     return;
   }
 
-  await prisma.expense.update({
-    where: { id },
-    data: {
-      status: ExpenseStatus.SUBMITTED,
-      submittedAt: new Date(),
-      rejectionReason: null,
-      reviewedAt: null,
-      reviewedById: null,
-    },
+  await updateExpenseRow(id, {
+    status: ExpenseStatus.SUBMITTED,
+    submittedAt: toDb(new Date()),
+    rejectionReason: null,
+    reviewedAt: null,
+    reviewedById: null,
   });
 
   await logExpenseAudit({
@@ -285,23 +301,17 @@ export async function submitExpense(
 
 export async function approveExpense(id: string): Promise<void> {
   const { user } = await requireDbUser("MANAGEMENT");
-  const existing = await prisma.expense.findUnique({
-    where: { id },
-    include: { shoot: true },
-  });
+  const existing = await loadExpense(id);
 
   if (!existing || existing.status !== ExpenseStatus.SUBMITTED) {
     return;
   }
 
-  await prisma.expense.update({
-    where: { id },
-    data: {
-      status: ExpenseStatus.APPROVED,
-      reviewedAt: new Date(),
-      reviewedById: user.id,
-      rejectionReason: null,
-    },
+  await updateExpenseRow(id, {
+    status: ExpenseStatus.APPROVED,
+    reviewedAt: toDb(new Date()),
+    reviewedById: user.id,
+    rejectionReason: null,
   });
 
   await logExpenseAudit({
@@ -339,22 +349,16 @@ export async function rejectExpense(
     return;
   }
 
-  const existing = await prisma.expense.findUnique({
-    where: { id },
-    include: { shoot: true },
-  });
+  const existing = await loadExpense(id);
   if (!existing || existing.status !== ExpenseStatus.SUBMITTED) {
     return;
   }
 
-  await prisma.expense.update({
-    where: { id },
-    data: {
-      status: ExpenseStatus.REJECTED,
-      rejectionReason: parsed.data.reason,
-      reviewedAt: new Date(),
-      reviewedById: user.id,
-    },
+  await updateExpenseRow(id, {
+    status: ExpenseStatus.REJECTED,
+    rejectionReason: parsed.data.reason,
+    reviewedAt: toDb(new Date()),
+    reviewedById: user.id,
   });
 
   await logExpenseAudit({
@@ -386,7 +390,7 @@ export async function deleteDraft(
 ): Promise<void> {
   const { user } = await requireDbUser("VIDEO_TEAM");
 
-  const existing = await prisma.expense.findUnique({ where: { id } });
+  const existing = await loadExpense(id);
   if (
     !existing ||
     existing.shootId !== shootId ||
@@ -399,7 +403,7 @@ export async function deleteDraft(
   }
 
   await deleteReceiptFile(existing.receiptPath);
-  await prisma.expense.delete({ where: { id } });
+  must(await db().from("expenses_slate").delete().eq("id", id), "delete expense");
   revalidateShootPaths(shootId);
   redirect(`/shoots/${shootId}`);
 }
@@ -410,15 +414,14 @@ export async function setExpensePaid(
   paid: boolean,
 ): Promise<void> {
   const { user } = await requireDbUser("MANAGEMENT");
-  const existing = await prisma.expense.findUnique({ where: { id } });
+  const existing = await loadExpense(id);
   if (!existing) return;
+  // Money only goes out on approved work. Undoing a payment is always allowed.
+  if (paid && existing.status !== ExpenseStatus.APPROVED) return;
 
-  await prisma.expense.update({
-    where: { id },
-    data: {
-      paid,
-      paidAt: paid ? new Date() : null,
-    },
+  await updateExpenseRow(id, {
+    paid,
+    paidAt: paid ? toDb(new Date()) : null,
   });
 
   await logExpenseAudit({

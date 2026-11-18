@@ -1,10 +1,11 @@
-import { PrismaClient } from "@prisma/client";
-import { importMasterCsv } from "../scripts/import-master-csv";
-
-const prisma = new PrismaClient();
+/**
+ * ⚠ Destructive: wipes all expense data and users in the database from .env,
+ * then imports the master CSV and creates the two demo logins.
+ * Run: npm run db:seed
+ */
+import { importMasterCsv } from "./import-master-csv";
 
 async function main() {
-  // Replaces demo shoots/expenses with production CSV; keeps/creates login users.
   const stats = await importMasterCsv({ keepUsers: false });
   console.log("Seeded users: team@88gb.local / mgmt@88gb.local (password123)");
   console.log(
@@ -15,11 +16,7 @@ async function main() {
   }
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

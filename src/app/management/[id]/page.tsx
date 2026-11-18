@@ -6,7 +6,7 @@ import { MarkPaidButton } from "@/components/MarkPaidButton";
 import { PaymentTermsList } from "@/components/PaymentTermsList";
 import { PaidBadge, StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
+import { getExpenseDetail } from "@/lib/expense-query";
 import { requireRole } from "@/lib/session";
 import type { ExpenseStatus } from "@/lib/types";
 import { receiptHref } from "@/lib/uploads";
@@ -21,19 +21,7 @@ export default async function ManagementExpensePage({
   const { id } = await params;
   const session = await requireRole("MANAGEMENT");
 
-  const expense = await prisma.expense.findUnique({
-    where: { id },
-    include: {
-      submitter: { select: { name: true, email: true } },
-      reviewedBy: { select: { name: true } },
-      shoot: { select: { id: true, name: true } },
-      category: true,
-      auditEvents: {
-        orderBy: { createdAt: "desc" },
-        include: { actor: { select: { name: true } } },
-      },
-    },
-  });
+  const expense = await getExpenseDetail(id);
 
   if (!expense) notFound();
 
@@ -101,7 +89,7 @@ export default async function ManagementExpensePage({
                     since {formatDate(expense.paidAt)}
                   </span>
                 ) : null}
-                <MarkPaidButton expenseId={expense.id} paid={expense.paid} />
+                <MarkPaidButton expenseId={expense.id} paid={expense.paid} status={expense.status} />
               </dd>
             </div>
             <div>

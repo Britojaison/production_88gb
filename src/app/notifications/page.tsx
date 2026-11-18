@@ -5,7 +5,7 @@ import {
 } from "@/app/actions/notifications";
 import { AppShell } from "@/components/AppShell";
 import { formatDate } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
+import { db, must, revive } from "@/lib/db";
 import { requireDbUser } from "@/lib/session";
 import type { Role } from "@/lib/types";
 
@@ -13,11 +13,17 @@ export const instant = false;
 
 export default async function NotificationsPage() {
   const { user } = await requireDbUser();
-  const notifications = await prisma.notification.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
+  const notifications = revive(
+    must(
+      await db()
+        .from("notifications_slate")
+        .select("*")
+        .eq("userId", user.id)
+        .order("createdAt", { ascending: false })
+        .limit(50),
+      "load notifications",
+    ),
+  );
 
   return (
     <AppShell name={user.name} role={user.role as Role} >

@@ -1,6 +1,6 @@
 import { createBrand } from "@/app/actions/brands";
 import { AppShell } from "@/components/AppShell";
-import { prisma } from "@/lib/prisma";
+import { db, must } from "@/lib/db";
 import { requireDbUser } from "@/lib/session";
 import type { Role } from "@/lib/types";
 
@@ -8,11 +8,15 @@ export const instant = false;
 
 export default async function BrandsPage() {
   const { user } = await requireDbUser();
-  const brands = await prisma.brand.findMany({
-    orderBy: { name: "asc" },
-    include: { _count: { select: { shoots: true } } },
-  });
-
+  const brands = (
+    must(
+      await db()
+        .from("brands_slate")
+        .select("*, shoot_brands_slate(count)")
+        .order("name", { ascending: true }),
+      "load brands",
+    )
+  ).map((b) => ({ ...b, _count: { shoots: b.shoot_brands_slate[0]?.count ?? 0 } }));
   return (
     <AppShell name={user.name} role={user.role as Role} >
       <main className="page-shell page-enter max-w-3xl">

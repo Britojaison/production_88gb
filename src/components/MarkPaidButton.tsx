@@ -1,15 +1,31 @@
 import { setExpensePaid } from "@/app/actions/expenses";
 
-/** Management-only: toggle settlement paid flag. */
+/**
+ * Management-only: toggle settlement paid flag.
+ * Paying requires an approved expense; undoing a payment is always allowed.
+ */
 export function MarkPaidButton({
   expenseId,
   paid,
+  status,
   compact = false,
 }: {
   expenseId: string;
   paid: boolean;
+  status: string;
   compact?: boolean;
 }) {
+  if (!paid && status !== "APPROVED") {
+    return (
+      <span
+        className="text-xs text-[var(--ink-faint)]"
+        title="Only approved expenses can be marked paid"
+      >
+        {status === "SUBMITTED" ? "Approve first" : "—"}
+      </span>
+    );
+  }
+
   const action = setExpensePaid.bind(null, expenseId, !paid);
 
   return (

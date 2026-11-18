@@ -1,7 +1,7 @@
 import { createShoot } from "@/app/actions/shoots";
 import { AppShell } from "@/components/AppShell";
 import { ShootForm } from "@/components/ShootForm";
-import { prisma } from "@/lib/prisma";
+import { getCachedBrands } from "@/lib/data-cache";
 import { requireRole } from "@/lib/session";
 
 export const instant = false;
@@ -9,7 +9,7 @@ export const instant = false;
 export default async function NewShootPage() {
   const session = await requireRole("VIDEO_TEAM");
   const today = new Date().toISOString().slice(0, 10);
-  const brands = await prisma.brand.findMany({ orderBy: { name: "asc" } });
+  const brands = await getCachedBrands();
 
   return (
     <AppShell name={session.user.name} role={session.user.role} >

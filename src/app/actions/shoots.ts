@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseBrandFormFields, resolveBrandIds } from "@/lib/brands";
 import { invalidateMemoryCache } from "@/lib/data-cache";
-import { prisma } from "@/lib/prisma";
+import { db, maybe, must, toDb } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { shootFormSchema } from "@/lib/validations";
 
@@ -29,11 +29,14 @@ async function syncShootBrands(shootId: string, formData: FormData) {
   const { brandIds, newNames } = parseBrandFormFields(formData);
   const resolved = await resolveBrandIds({ brandIds, newNames });
 
-  await prisma.shootBrand.deleteMany({ where: { shootId } });
+  must(await db().from("shoot_brands_slate").delete().eq("shootId", shootId), "clear shoot brands");
   if (resolved.length > 0) {
-    await prisma.shootBrand.createMany({
-      data: resolved.map((brandId) => ({ shootId, brandId })),
-    });
+    must(
+      await db()
+        .from("shoot_brands_slate")
+        .insert(resolved.map((brandId) => ({ shootId, brandId }))),
+      "link shoot brands",
+    );
   }
 }
 
@@ -48,17 +51,22 @@ export async function createShoot(
   }
 
   const data = parsed.data;
-  const shoot = await prisma.shoot.create({
-    data: {
-      name: data.name,
-      startDate: new Date(data.startDate),
-      endDate: data.endDate ? new Date(data.endDate) : null,
-      notes: data.notes?.trim() ? data.notes.trim() : null,
-      status: data.status,
-      image: null,
-      budget: resolveBudget(data.budget),
-    },
-  });
+  const shoot = must(
+    await db()
+      .from("shoots_slate")
+      .insert({
+        name: data.name,
+        startDate: toDb(new Date(data.startDate)),
+        endDate: data.endDate ? toDb(new Date(data.endDate)) : null,
+        notes: data.notes?.trim() ? data.notes.trim() : null,
+        status: data.status,
+        image: null,
+        budget: resolveBudget(data.budget),
+      })
+      .select("id")
+      .single(),
+    "create shoot",
+  );
 
   await syncShootBrands(shoot.id, formData);
 
@@ -84,24 +92,30 @@ export async function updateShoot(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const existing = await prisma.shoot.findUnique({ where: { id } });
+  const existing = maybe(
+    await db().from("shoots_slate").select("id").eq("id", id).maybeSingle(),
+    "load shoot",
+  );
   if (!existing) {
     return { error: "Shoot not found" };
   }
 
   const data = parsed.data;
 
-  await prisma.shoot.update({
-    where: { id },
-    data: {
-      name: data.name,
-      startDate: new Date(data.startDate),
-      endDate: data.endDate ? new Date(data.endDate) : null,
-      notes: data.notes?.trim() ? data.notes.trim() : null,
-      status: data.status,
-      budget: resolveBudget(data.budget),
-    },
-  });
+  must(
+    await db()
+      .from("shoots_slate")
+      .update({
+        name: data.name,
+        startDate: toDb(new Date(data.startDate)),
+        endDate: data.endDate ? toDb(new Date(data.endDate)) : null,
+        notes: data.notes?.trim() ? data.notes.trim() : null,
+        status: data.status,
+        budget: resolveBudget(data.budget),
+      })
+      .eq("id", id),
+    "update shoot",
+  );
 
   await syncShootBrands(id, formData);
 

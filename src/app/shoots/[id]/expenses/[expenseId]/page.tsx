@@ -10,7 +10,9 @@ import { ExpenseForm } from "@/components/ExpenseForm";
 import { PaymentTermsList } from "@/components/PaymentTermsList";
 import { PaidBadge, StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
+import { getExpenseDetail } from "@/lib/expense-query";
+import { getCachedCategories } from "@/lib/data-cache";
+import { listVendors } from "@/lib/vendors";
 import { requireRole } from "@/lib/session";
 import type { ExpenseStatus } from "@/lib/types";
 import { receiptHref } from "@/lib/uploads";
@@ -25,18 +27,7 @@ export default async function ShootExpenseDetailPage({
   const { id: shootId, expenseId } = await params;
   const session = await requireRole("VIDEO_TEAM");
 
-  const expense = await prisma.expense.findUnique({
-    where: { id: expenseId },
-    include: {
-      shoot: true,
-      category: true,
-      reviewedBy: { select: { name: true } },
-      auditEvents: {
-        orderBy: { createdAt: "desc" },
-        include: { actor: { select: { name: true } } },
-      },
-    },
-  });
+  const expense = await getExpenseDetail(expenseId);
 
   if (
     !expense ||
@@ -47,8 +38,8 @@ export default async function ShootExpenseDetailPage({
   }
 
   const [categories, vendors] = await Promise.all([
-    prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
-    prisma.vendor.findMany({ orderBy: { name: "asc" } }),
+    getCachedCategories(),
+    listVendors(),
   ]);
 
   const editable =

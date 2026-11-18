@@ -1,10 +1,8 @@
-import type { Prisma } from "@prisma/client";
+import { db, fetchAll, likePattern, maybe, must, revive } from "@/lib/db";
 import { COMMITTED_STATUSES } from "@/lib/payment-terms";
-import { prisma } from "@/lib/prisma";
 
 // ============================================================
-// Zero-Cost In-Memory Cache (RAM Map in Node.js process)
-// Works in both dev and production, eliminates WAN latency to Tokyo.
+// Zero-Cost In-Memory Cache (RAM Map in the Node.js process)
 // ============================================================
 
 type CacheEntry<T> = {
@@ -60,33 +58,40 @@ export type CachedShootItem = {
 // Cached Query Methods
 // ============================================================
 
-/**
- * Static Categories cache (1 hour TTL).
- */
+/** Categories (1 hour TTL). */
 export async function getCachedCategories() {
   const key = "categories:all";
-  const cached = getFromMemory<Awaited<ReturnType<typeof prisma.category.findMany>>>(key);
+  type R = Awaited<ReturnType<typeof loadCategories>>;
+  const cached = getFromMemory<R>(key);
   if (cached) return cached;
-
-  const data = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
-  return setToMemory(key, data, 3600);
+  return setToMemory(key, await loadCategories(), 3600);
 }
 
-/**
- * Static Brands cache (1 hour TTL).
- */
+async function loadCategories() {
+  return revive(
+    must(
+      await db().from("categories_slate").select("*").order("sortOrder", { ascending: true }),
+      "load categories",
+    ),
+  );
+}
+
+/** Brands (1 hour TTL). */
 export async function getCachedBrands() {
   const key = "brands:all";
-  const cached = getFromMemory<Awaited<ReturnType<typeof prisma.brand.findMany>>>(key);
+  type R = Awaited<ReturnType<typeof loadBrands>>;
+  const cached = getFromMemory<R>(key);
   if (cached) return cached;
-
-  const data = await prisma.brand.findMany({ orderBy: { name: "asc" } });
-  return setToMemory(key, data, 3600);
+  return setToMemory(key, await loadBrands(), 3600);
 }
 
-/**
- * Consolidated expense status counts (60s TTL).
- */
+async function loadBrands() {
+  return revive(
+    must(await db().from("brands_slate").select("*").order("name", { ascending: true }), "load brands"),
+  );
+}
+
+/** Expense status counts (60s TTL). */
 export async function getCachedExpenseCounts(submitterId?: string) {
   const key = `counts:${submitterId ?? "all"}`;
   const cached = getFromMemory<{
@@ -98,35 +103,24 @@ export async function getCachedExpenseCounts(submitterId?: string) {
   }>(key);
   if (cached) return cached;
 
-  const where = submitterId ? { submitterId } : {};
-  const grouped = await prisma.expense.groupBy({
-    by: ["status", "paid"],
-    where,
-    _count: { id: true },
-  });
+  const rows = await fetchAll((from, to) => {
+    let q = db().from("expenses_slate").select("status, paid");
+    if (submitterId) q = q.eq("submitterId", submitterId);
+    return q.order("id").range(from, to);
+  }, "count expenses");
 
-  let submitted = 0;
-  let approved = 0;
-  let rejected = 0;
-  let paid = 0;
-  let unpaidApproved = 0;
-
-  for (const row of grouped) {
-    const n = row._count.id;
-    if (row.status === "SUBMITTED") submitted += n;
-    if (row.status === "APPROVED") approved += n;
-    if (row.status === "REJECTED") rejected += n;
-    if (row.paid) paid += n;
-    if (row.status === "APPROVED" && !row.paid) unpaidApproved += n;
+  const result = { submitted: 0, approved: 0, rejected: 0, paid: 0, unpaidApproved: 0 };
+  for (const row of rows) {
+    if (row.status === "SUBMITTED") result.submitted++;
+    if (row.status === "APPROVED") result.approved++;
+    if (row.status === "REJECTED") result.rejected++;
+    if (row.paid) result.paid++;
+    if (row.status === "APPROVED" && !row.paid) result.unpaidApproved++;
   }
-
-  const result = { submitted, approved, rejected, paid, unpaidApproved };
   return setToMemory(key, result, 60);
 }
 
-/**
- * Shoots list with pre-calculated expense totals in ONE query (60s TTL).
- */
+/** Shoots list with expense totals (60s TTL). */
 export async function getCachedShoots(options?: {
   status?: string;
   q?: string;
@@ -134,94 +128,84 @@ export async function getCachedShoots(options?: {
   offset?: number;
 }) {
   const status = options?.status;
-  const q = options?.q;
+  const qText = options?.q;
   const take = options?.limit ?? 6;
   const skip = options?.offset ?? 0;
 
-  const key = `shoots:${status ?? "ALL"}:${q ?? ""}:${take}:${skip}`;
-  const cached = getFromMemory<{
-    shoots: CachedShootItem[];
-    totalCount: number;
-  }>(key);
+  const key = `shoots:${status ?? "ALL"}:${qText ?? ""}:${take}:${skip}`;
+  const cached = getFromMemory<{ shoots: CachedShootItem[]; totalCount: number }>(key);
   if (cached) return cached;
 
-  const where: Prisma.ShootWhereInput = {
-    ...(status && status !== "ALL" ? { status } : {}),
-    ...(q
-      ? {
-          OR: [
-            { name: { contains: q, mode: "insensitive" as const } },
-            { notes: { contains: q, mode: "insensitive" as const } },
-            {
-              brands: {
-                some: { brand: { name: { contains: q, mode: "insensitive" as const } } },
-              },
-            },
-          ],
-        }
-      : {}),
-  };
+  // Search covers shoot name, notes and brand names.
+  const pattern = qText?.trim() ? likePattern(qText) : null;
+  let brandShootIds: string[] = [];
+  if (pattern) {
+    const links = must(
+      await db()
+        .from("shoot_brands_slate")
+        .select("shootId, brand:brands_slate!inner(name)")
+        .ilike("brand.name", pattern),
+      "search brands",
+    );
+    brandShootIds = [...new Set(links.map((l) => l.shootId))];
+  }
 
-  const [rawShoots, totalCount] = await Promise.all([
-    prisma.shoot.findMany({
-      where,
-      orderBy: { startDate: "desc" },
-      skip,
-      take,
-      include: {
-        _count: { select: { expenses: true } },
-        brands: {
-          include: { brand: true },
-          orderBy: { brand: { name: "asc" } },
-        },
-        // Spend = submitted + approved only (drafts and rejections don't count)
-        expenses: {
-          where: { status: { in: [...COMMITTED_STATUSES] } },
-          select: { amount: true },
-        },
-      },
-    }),
-    prisma.shoot.count({ where }),
-  ]);
+  let q = db()
+    .from("shoots_slate")
+    .select(
+      "*, all_expenses:expenses_slate(count), committed:expenses_slate(amount, status), shoot_brands:shoot_brands_slate(brand:brands_slate(name, logoPath))",
+      { count: "exact" },
+    )
+    .in("committed.status", [...COMMITTED_STATUSES]);
+  if (status && status !== "ALL") q = q.eq("status", status);
+  if (pattern) {
+    const v = `"${pattern.replace(/%/g, "*")}"`;
+    const ors = [`name.ilike.${v}`, `notes.ilike.${v}`];
+    if (brandShootIds.length) ors.push(`id.in.(${brandShootIds.join(",")})`);
+    q = q.or(ors.join(","));
+  }
+  const res = await q
+    .order("startDate", { ascending: false })
+    .order("id")
+    .range(skip, skip + take - 1);
+  const rows = revive(must(res, "list shoots"));
 
-  const shoots = rawShoots.map((s) => {
-    const totalAmount = s.expenses.reduce((sum, e) => sum + e.amount, 0);
-    return {
-      id: s.id,
-      name: s.name,
-      startDate: s.startDate,
-      endDate: s.endDate,
-      status: s.status,
-      budget: s.budget,
-      expenseCount: s._count.expenses,
-      totalAmount,
-      brands: s.brands.map((b) => ({
-        name: b.brand.name,
-        logoPath: b.brand.logoPath,
-      })),
-    };
-  });
+  const shoots: CachedShootItem[] = rows.map((s) => ({
+    id: s.id,
+    name: s.name,
+    startDate: s.startDate,
+    endDate: s.endDate,
+    status: s.status,
+    budget: s.budget,
+    expenseCount: s.all_expenses[0]?.count ?? 0,
+    totalAmount: s.committed.reduce((sum, e) => sum + e.amount, 0),
+    brands: s.shoot_brands
+      .flatMap((sb) => (sb.brand ? [{ name: sb.brand.name, logoPath: sb.brand.logoPath }] : []))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  }));
 
-  const result = { shoots, totalCount };
-  return setToMemory(key, result, 60);
+  return setToMemory(key, { shoots, totalCount: res.count ?? shoots.length }, 60);
 }
 
-export type ExpenseWithShoot = Prisma.ExpenseGetPayload<{
-  include: { shoot: { select: { id: true; name: true } } };
-}>;
+async function loadRecentRequests(role: string, submitterId?: string) {
+  let q = db()
+    .from("expenses_slate")
+    .select("*, shoot:shoots_slate(id, name)")
+    .in("status", ["SUBMITTED", "APPROVED", "REJECTED"]);
+  if (role !== "MANAGEMENT" && submitterId) q = q.eq("submitterId", submitterId);
+  const rows = must(
+    await q
+      .order("submittedAt", { ascending: false, nullsFirst: false })
+      .order("updatedAt", { ascending: false })
+      .limit(40),
+    "recent requests",
+  );
+  return revive(rows);
+}
 
-export type ShootDetailWithBrands = Prisma.ShootGetPayload<{
-  include: {
-    brands: {
-      include: { brand: true };
-      orderBy: { brand: { name: "asc" } };
-    };
-  };
-}>;
+export type ExpenseWithShoot = Awaited<ReturnType<typeof loadRecentRequests>>[number];
 
-/**
- * Recent request status pool for the sidebar rail (60s TTL).
- */
+/** Recent request status pool for the sidebar rail (60s TTL). */
 export async function getCachedRecentRequests(
   role: string,
   submitterId?: string,
@@ -229,47 +213,32 @@ export async function getCachedRecentRequests(
   const key = `recent-requests:${role}:${submitterId ?? "all"}`;
   const cached = getFromMemory<ExpenseWithShoot[]>(key);
   if (cached) return cached;
-
-  const requestWhere =
-    role === "MANAGEMENT"
-      ? { status: { in: ["SUBMITTED", "APPROVED", "REJECTED"] } }
-      : {
-          submitterId,
-          status: { in: ["SUBMITTED", "APPROVED", "REJECTED"] },
-        };
-
-  const data = await prisma.expense.findMany({
-    where: requestWhere,
-    include: { shoot: { select: { id: true, name: true } } },
-    orderBy: [{ submittedAt: "desc" }, { updatedAt: "desc" }],
-    take: 40,
-  });
-
-  return setToMemory(key, data, 60);
+  return setToMemory(key, await loadRecentRequests(role, submitterId), 60);
 }
 
-/**
- * Individual shoot detail cache (60s TTL).
- */
-export async function getCachedShootDetail(
-  id: string,
-): Promise<ShootDetailWithBrands | null> {
+async function loadShootDetail(id: string) {
+  const row = maybe(
+    await db()
+      .from("shoots_slate")
+      .select("*, brands:shoot_brands_slate(brandId, shootId, brand:brands_slate(*))")
+      .eq("id", id)
+      .maybeSingle(),
+    "load shoot",
+  );
+  if (!row) return null;
+  const shoot = revive(row);
+  shoot.brands.sort((a, b) => (a.brand?.name ?? "").localeCompare(b.brand?.name ?? ""));
+  return shoot;
+}
+
+export type ShootDetailWithBrands = NonNullable<Awaited<ReturnType<typeof loadShootDetail>>>;
+
+/** Individual shoot detail (60s TTL). */
+export async function getCachedShootDetail(id: string): Promise<ShootDetailWithBrands | null> {
   const key = `shoot-detail:${id}`;
   const cached = getFromMemory<ShootDetailWithBrands>(key);
   if (cached) return cached;
-
-  const data = await prisma.shoot.findUnique({
-    where: { id },
-    include: {
-      brands: {
-        include: { brand: true },
-        orderBy: { brand: { name: "asc" } },
-      },
-    },
-  });
-
-  if (data) {
-    setToMemory(key, data, 60);
-  }
+  const data = await loadShootDetail(id);
+  if (data) setToMemory(key, data, 60);
   return data;
 }

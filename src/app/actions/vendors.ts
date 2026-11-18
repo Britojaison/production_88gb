@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { db, must } from "@/lib/db";
 import { requireDbUser } from "@/lib/session";
 import { vendorFormSchema } from "@/lib/validations";
 
@@ -15,12 +15,13 @@ export async function createVendor(formData: FormData): Promise<void> {
     return;
   }
 
-  await prisma.vendor.create({
-    data: {
+  must(
+    await db().from("vendors_slate").insert({
       name: parsed.data.name,
       paymentDetails: parsed.data.paymentDetails,
-    },
-  });
+    }),
+    "create vendor",
+  );
 
   revalidatePath("/vendors");
   revalidatePath("/shoots");
@@ -39,13 +40,16 @@ export async function updateVendor(
     return;
   }
 
-  await prisma.vendor.update({
-    where: { id },
-    data: {
-      name: parsed.data.name,
-      paymentDetails: parsed.data.paymentDetails,
-    },
-  });
+  must(
+    await db()
+      .from("vendors_slate")
+      .update({
+        name: parsed.data.name,
+        paymentDetails: parsed.data.paymentDetails,
+      })
+      .eq("id", id),
+    "update vendor",
+  );
 
   revalidatePath("/vendors");
 }

@@ -1,5 +1,5 @@
 import { logoPathForBrandName } from "@/lib/brand-logos";
-import { prisma } from "@/lib/prisma";
+import { db, must } from "@/lib/db";
 
 export const SEED_BRANDS = [
   "MM wear",
@@ -16,29 +16,32 @@ export async function findOrCreateBrand(name: string): Promise<string> {
     throw new Error("Brand name is required");
   }
 
-  const all = await prisma.brand.findMany({
-    select: { id: true, name: true, logoPath: true },
-  });
+  const all = must(
+    await db().from("brands_slate").select("id, name, logoPath"),
+    "load brands",
+  );
   const existing = all.find(
     (b) => b.name.toLowerCase() === trimmed.toLowerCase(),
   );
   if (existing) {
     const logoPath = logoPathForBrandName(existing.name);
     if (logoPath && !existing.logoPath) {
-      await prisma.brand.update({
-        where: { id: existing.id },
-        data: { logoPath },
-      });
+      must(
+        await db().from("brands_slate").update({ logoPath }).eq("id", existing.id),
+        "update brand logo",
+      );
     }
     return existing.id;
   }
 
-  const created = await prisma.brand.create({
-    data: {
-      name: trimmed,
-      logoPath: logoPathForBrandName(trimmed),
-    },
-  });
+  const created = must(
+    await db()
+      .from("brands_slate")
+      .insert({ name: trimmed, logoPath: logoPathForBrandName(trimmed) })
+      .select("id")
+      .single(),
+    "create brand",
+  );
   return created.id;
 }
 
@@ -53,10 +56,10 @@ export async function resolveBrandIds(opts: {
   const ids = new Set<string>();
 
   if (opts.brandIds.length > 0) {
-    const found = await prisma.brand.findMany({
-      where: { id: { in: opts.brandIds } },
-      select: { id: true },
-    });
+    const found = must(
+      await db().from("brands_slate").select("id").in("id", opts.brandIds),
+      "load selected brands",
+    );
     for (const b of found) ids.add(b.id);
   }
 

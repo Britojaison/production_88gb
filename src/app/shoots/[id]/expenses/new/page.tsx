@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { createExpense } from "@/app/actions/expenses";
 import { AppShell } from "@/components/AppShell";
 import { ExpenseForm } from "@/components/ExpenseForm";
-import { prisma } from "@/lib/prisma";
+import { getCachedCategories, getCachedShootDetail } from "@/lib/data-cache";
+import { listVendors } from "@/lib/vendors";
 import { requireRole } from "@/lib/session";
 
 export const instant = false;
@@ -16,12 +17,12 @@ export default async function NewShootExpensePage({
   const { id: shootId } = await params;
   const session = await requireRole("VIDEO_TEAM");
 
-  const shoot = await prisma.shoot.findUnique({ where: { id: shootId } });
+  const shoot = await getCachedShootDetail(shootId);
   if (!shoot) notFound();
 
   const [categories, vendors] = await Promise.all([
-    prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
-    prisma.vendor.findMany({ orderBy: { name: "asc" } }),
+    getCachedCategories(),
+    listVendors(),
   ]);
 
   const today = new Date().toISOString().slice(0, 10);

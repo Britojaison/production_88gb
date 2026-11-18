@@ -6,10 +6,9 @@
  */
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { PrismaClient } from "@prisma/client";
+import { db, must } from "../src/lib/db";
 import { createClient } from "@supabase/supabase-js";
 
-const prisma = new PrismaClient();
 const bucket = process.env.SUPABASE_RECEIPTS_BUCKET || "receipts";
 
 const MIME: Record<string, string> = {
@@ -34,10 +33,10 @@ async function main() {
     console.log(`Created private bucket "${bucket}".`);
   }
 
-  const rows = await prisma.expense.findMany({
-    where: { receiptPath: { startsWith: "uploads/" } },
-    select: { id: true, receiptPath: true },
-  });
+  const rows = must(
+    await db().from("expenses_slate").select("id, receiptPath").like("receiptPath", "uploads/%"),
+    "load local receipts",
+  );
 
   let moved = 0;
   for (const row of rows) {
@@ -58,18 +57,16 @@ async function main() {
       console.warn(`Upload failed for ${rel}: ${error.message}`);
       continue;
     }
-    await prisma.expense.update({
-      where: { id: row.id },
-      data: { receiptPath: `supabase:${filename}` },
-    });
+    must(
+      await db().from("expenses_slate").update({ receiptPath: `supabase:${filename}` }).eq("id", row.id),
+      "repoint receipt",
+    );
     moved++;
   }
   console.log(`Moved ${moved} of ${rows.length} local receipts to Supabase Storage.`);
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

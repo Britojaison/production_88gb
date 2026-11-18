@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { db, must } from "@/lib/db";
 
 /**
  * Optional SMTP hook — set SMTP_* env vars later to enable email.
@@ -30,21 +30,26 @@ export async function notifyUsers(opts: {
 }) {
   if (opts.userIds.length === 0) return;
 
-  await prisma.notification.createMany({
-    data: opts.userIds.map((userId) => ({
-      userId,
-      type: opts.type,
-      title: opts.title,
-      body: opts.body,
-      href: opts.href,
-      expenseId: opts.expenseId,
-    })),
-  });
+  must(
+    await db()
+      .from("notifications_slate")
+      .insert(
+        opts.userIds.map((userId) => ({
+          userId,
+          type: opts.type,
+          title: opts.title,
+          body: opts.body,
+          href: opts.href ?? null,
+          expenseId: opts.expenseId ?? null,
+        })),
+      ),
+    "create notifications",
+  );
 
-  const users = await prisma.user.findMany({
-    where: { id: { in: opts.userIds } },
-    select: { email: true },
-  });
+  const users = must(
+    await db().from("users_slate").select("email").in("id", opts.userIds),
+    "load notified users",
+  );
   await Promise.all(
     users.map((u) =>
       sendEmailStub({
@@ -63,10 +68,10 @@ export async function notifyAllManagement(opts: {
   href?: string;
   expenseId?: string;
 }) {
-  const managers = await prisma.user.findMany({
-    where: { role: "MANAGEMENT" },
-    select: { id: true },
-  });
+  const managers = must(
+    await db().from("users_slate").select("id").eq("role", "MANAGEMENT"),
+    "load managers",
+  );
   await notifyUsers({
     userIds: managers.map((m) => m.id),
     ...opts,

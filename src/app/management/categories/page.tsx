@@ -1,13 +1,13 @@
 import { createCategory } from "@/app/actions/categories";
 import { AppShell } from "@/components/AppShell";
-import { prisma } from "@/lib/prisma";
+import { getCachedCategories } from "@/lib/data-cache";
 import { requireRole } from "@/lib/session";
 
 export const instant = false;
 
 export default async function CategoriesPage() {
   const session = await requireRole("MANAGEMENT");
-  const categories = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
+  const categories = await getCachedCategories();
 
   return (
     <AppShell name={session.user.name} role={session.user.role} >

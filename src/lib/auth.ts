@@ -2,6 +2,7 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { getDbUserByEmail } from "@/lib/user-lookup";
 import type { Role } from "@/lib/types";
 
 declare module "next-auth" {
@@ -78,13 +79,19 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Keep id/role in sync with DB (seed/reset creates new user ids).
+      // Only a user that is *confirmed missing* logs the session out. If the database
+      // is unreachable (e.g. pooler out of connections) keep the existing token —
+      // otherwise one DB hiccup signs out every device at once.
       const email = typeof token.email === "string" ? token.email : undefined;
       if (email) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: email.toLowerCase().trim() },
-        });
+        let dbUser: Awaited<ReturnType<typeof getDbUserByEmail>> | undefined;
+        try {
+          dbUser = await getDbUserByEmail(email);
+        } catch (err) {
+          console.error("[auth] user lookup failed; keeping existing session", err);
+          return token;
+        }
         if (!dbUser) {
-          // Drop identity so session callback treats this as logged out.
           delete token.id;
           delete token.role;
           return token;

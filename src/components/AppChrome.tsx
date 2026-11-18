@@ -19,6 +19,7 @@ import {
   IconTag,
   IconUsers,
 } from "@/components/SidebarIcons";
+import { SessionWatcher } from "@/components/SessionWatcher";
 import type { Role } from "@/lib/types";
 
 type NavItem = {
@@ -144,6 +145,16 @@ export function AppChrome({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+
+  // Clear the session without letting NextAuth build the redirect from NEXTAUTH_URL
+  // (a localhost value there sends production users to localhost), then go to /login
+  // on whatever host this page is actually served from.
+  async function handleSignOut() {
+    await signOut({ redirect: false });
+    // Full reload on purpose: drops all client state cached for the old user.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign("/login");
+  }
   const [open, setOpen] = useState(false);
   const home = role === "MANAGEMENT" ? "/dashboard" : "/shoots";
   const searchAction = role === "MANAGEMENT" ? "/management" : "/shoots";
@@ -232,7 +243,7 @@ export function AppChrome({
           </div>
           <button
             type="button"
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={handleSignOut}
             className="btn btn-secondary mt-3 w-full justify-center !py-2 text-xs"
           >
             Sign out
@@ -287,7 +298,7 @@ export function AppChrome({
             </div>
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={handleSignOut}
               className="btn btn-secondary hidden !px-3 !py-1.5 text-xs sm:inline-flex"
             >
               Sign out
@@ -297,6 +308,7 @@ export function AppChrome({
 
         {children}
       </div>
+      <SessionWatcher email={email} />
     </div>
   );
 }

@@ -1262,3 +1262,26 @@
   color: var(--danger-ink);
 }
 
+/* Account switched in another tab */
+.session-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(16 24 40 / 0.5);
+  backdrop-filter: blur(2px);
+}
+.session-dialog {
+  width: min(100%, 28rem);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 20px 50px rgb(16 24 40 / 0.25);
+}
+.session-dialog h2 { font-size: 1.125rem; font-weight: 600; color: var(--ink); }
+.session-dialog p { margin-top: 0.5rem; font-size: 0.9375rem; line-height: 1.5; color: var(--ink-muted); }
+.session-dialog .session-hint { font-size: 0.8125rem; color: var(--ink-faint); }
+.session-dialog .btn { margin-top: 1.25rem; width: 100%; }
